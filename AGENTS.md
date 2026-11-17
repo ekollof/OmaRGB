@@ -1,0 +1,55 @@
+# AGENTS.md
+
+OmaRGB paints RGB hardware from the active Omarchy theme. This file is the working agreement for that tree. The user-facing overview is [README.md](README.md). Contribution goes through GitHub issues, described in [CONTRIBUTE.md](CONTRIBUTE.md).
+
+## Source of truth
+
+- Colours come only from `~/.local/state/omarchy/current/theme/colors.toml`. `keyboard.rgb` is a one-colour fallback for themes that have no `color0`–`color15`.
+- Do not sample wallpaper pixels. Do not invent hues that are not in the theme file.
+- A backlight emits every channel. Pastel hexes look coloured on a dark terminal and white as light. `omargb/theme.py` drops the white floor and scales the strongest remaining channel to 255. Keep that. Do not mix colours toward white the way `omarchy-theme-set-openrgb` does.
+- Skip terminal chrome `color0`, `color7`, `color8`, and `color15`, and any slot whose chroma peak is under 24.
+
+## What to edit
+
+| Change | Where |
+|---|---|
+| A known device, existing engine | `share/devices.toml` |
+| How a protocol paints | `omargb/engines/<name>.py`, then register it in `omargb/engines/__init__.py` |
+| Which ids match which engine | `omargb/catalog.py` |
+| USB, PCI, and board discovery | `omargb/scan.py` |
+| Install, hooks, login PATH | `install.sh`, `uninstall.sh`, `hooks/`, `shims/`, `systemd/` |
+
+Paint a device only when the database matches it. An unlisted lamp stays dark.
+
+## Engines
+
+An engine is a class with `name` and `apply(theme, targets, dry_run) -> str | None`. `dry_run` must not open hardware. A failure string that contains `unavailable`, `rejected`, `missing`, `failed`, or `not ready` lets `omargb/apply.py` try `fallback` from the database row.
+
+- `vanguard_k08` reads the live 8192-byte map and writes only the primary RGB bytes at `0x09 + led*50 + 2`. Leave the macro table at `0x1960` alone. Do not commit a personal `block-template.bin`. The firmware needs about 350 ms between the four chunks.
+- `openrgb` is static mode, full brightness, one theme colour. It does not own devices another engine already claimed.
+- `openlinkhub` posts to `http://127.0.0.1:27003/api/color/all`. The `openlinkhub` binary itself panics outside the system service.
+- `asus_rog` and `framework16` replace Omarchy quattro's laptop painters (`omarchy-theme-set-keyboard-asus-rog` and `omarchy-theme-set-keyboard-f16`). The database rows match the same machines as `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. Framework hue and saturation follow `colorsys`, which is what Omarchy's QMK helper matches. The colour is still the theme solid from `colors.toml`, not the raw `keyboard.rgb` accent.
+
+## Omarchy boundaries
+
+- Do not edit `/usr/share/omarchy` or the Omarchy source checkout to add a device. This project overrides those painters with hooks and PATH shims.
+- `install.sh` is allowed to step aside `~/.config/omarchy/hooks/*/vanguard-k08-rgb` and disable `vanguard-k08-theme-watch.service`. `uninstall.sh` puts them back from `~/.local/state/omargb/install.json`.
+- Shims live in `~/.local/share/omargb/shims` and are prepended from `~/.config/uwsm/env.d/90-omargb` at the next graphical login. The theme-set hook is what paints before that login.
+- Do not open an Omarchy pull request for this work.
+
+## Checks
+
+```bash
+python3 tests/test_omargb.py
+omargb plan
+```
+
+`plan` must not write to hardware. Run `omargb apply` only when the user wants the lights changed. The keyboard write takes a couple of seconds. Hold `~/.local/state/omargb/apply.lock` for the whole apply, which `omargb/cli.py` already does.
+
+## Style
+
+- Python 3.11 or newer. Standard library only.
+- Bash scripts use `#!/bin/bash`, `set -euo pipefail`, `[[ ]]`, and `(( ))`.
+- Markdown lines are not hard-wrapped.
+- Device ids in the database are lowercase hex `vendor:product`, or a shell wildcard for DMI and OpenRGB names.
+- One coherent change per commit. Do not commit or push unless the user asks.

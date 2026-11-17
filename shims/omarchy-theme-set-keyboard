@@ -1,0 +1,4 @@
+#!/bin/bash
+# Omarchy's theme-set hook runs OmaRGB. These shims only stop the stock
+# keyboard, OpenRGB, ASUS, and Framework painters from washing the colour first.
+exit 0

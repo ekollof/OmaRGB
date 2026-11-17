@@ -1,0 +1,72 @@
+# Hardware RGB database. OmaRGB paints a device only when an entry here matches.
+# bus is usb, pci, dmi, or openrgb.
+#   usb / pci ids are vendor:product, lowercase hex (041e:3126).
+#   dmi ids are "vendor:name", with shell wildcards. The name is the board
+#   name, the product family, or the product name. Matching is case-insensitive.
+#   openrgb ids match the name OpenRGB prints, with shell wildcards.
+# effect is solid (one colour) or gradient (the theme's LED stops).
+# openrgb is the OpenRGB device name to paint when the engine is openrgb.
+# fallback is the engine used when the first one cannot run.
+
+[[device]]
+bus = "usb"
+id = "041e:3126"
+name = "Sound BlasterX Vanguard K08"
+engine = "vanguard_k08"
+effect = "gradient"
+
+[[device]]
+bus = "usb"
+id = "1532:0099"
+name = "Razer Basilisk V3"
+engine = "openrgb"
+openrgb = "Basilisk V3"
+effect = "solid"
+
+[[device]]
+bus = "usb"
+id = "1b1c:0c10"
+name = "Corsair Commander PRO"
+engine = "openlinkhub"
+fallback = "openrgb"
+openrgb = "Commander Pro"
+effect = "solid"
+
+[[device]]
+bus = "usb"
+id = "32ac:0012"
+name = "Framework Laptop 16 keyboard"
+engine = "framework16"
+effect = "solid"
+
+# Same machine as omarchy-hw-asus-rog: sys_vendor plus "ROG" in product_family.
+[[device]]
+bus = "dmi"
+id = "ASUSTeK COMPUTER INC.:*ROG*"
+name = "ASUS ROG keyboard"
+engine = "asus_rog"
+effect = "solid"
+
+# Same machine as omarchy-hw-framework16. The USB row above is the keyboard
+# the Framework udev rule allows; this covers a Laptop 16 whose product id differs.
+[[device]]
+bus = "dmi"
+id = "Framework:*Laptop 16*"
+name = "Framework Laptop 16"
+engine = "framework16"
+effect = "solid"
+
+[[device]]
+bus = "dmi"
+id = "*:X470 GAMING PLUS MAX*"
+name = "MSI X470 GAMING PLUS MAX"
+engine = "openrgb"
+openrgb = "X470 GAMING PLUS MAX"
+effect = "solid"
+
+[[device]]
+bus = "openrgb"
+id = "Corsair Vengeance RGB Pro*"
+name = "Corsair Vengeance RGB Pro"
+engine = "openrgb"
+effect = "solid"

@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch the Omarchy theme for RGB hardware
+
+[Path]
+# wallpaperctl replaces colors.toml without running the theme-set hook.
+PathChanged=%h/.local/state/omarchy/current/theme
+Unit=omargb-apply.service
+
+[Install]
+WantedBy=default.target

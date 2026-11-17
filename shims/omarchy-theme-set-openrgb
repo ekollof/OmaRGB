@@ -1,0 +1,4 @@
+#!/bin/bash
+# Stock OpenRGB lighting is handled by OmaRGB when this directory is first on PATH.
+# Omarchy brightens the accent toward white; that wash is what this shim stops.
+exit 0
