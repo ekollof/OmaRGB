@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from omargb.apply import Report, run
-from omargb.console import status_mark
+from omargb.console import present_lines, status_mark
 from omargb.catalog import load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
 from omargb.scan import Hardware, scan
@@ -48,6 +48,24 @@ class ConsoleTest(unittest.TestCase):
         self.assertEqual(status_mark(Report(["vanguard_k08: lighting interface not ready"], not_ready=True), "apply"), ("31", "Not ready"))
         self.assertEqual(status_mark(Report(["asus_rog: asusctl missing"]), "apply"), ("31", "Failed"))
         self.assertEqual(status_mark(Report(["no theme colours to apply"]), "apply"), ("90", "Nothing to paint"))
+
+    def test_card_fits_a_long_openrgb_list(self):
+        lines = [
+            "theme solid #0091ff stops #0091ff #006bff #003fff #3e00ff #9100ff #fa00ff",
+            "vanguard_k08 #0091ff #006bff #003fff #3e00ff #9100ff #fa00ff",
+            "openrgb 5:Razer Basilisk V3 #0091ff, 6:MSI X470 GAMING PLUS MAX (MS-7B79) #0091ff, "
+            "0:Corsair Vengeance RGB Pro DDR4 #0091ff, 1:Corsair Vengeance RGB Pro DDR4 #0091ff",
+            "openlinkhub Corsair Commander PRO #0091ff",
+        ]
+        shown = present_lines(lines, 36)
+        self.assertTrue(all(len(row) <= 36 for row in shown))
+        self.assertIn("solid  #0091ff", shown)
+        self.assertIn("vanguard_k08", shown)
+        self.assertIn("  gradient", shown)
+        self.assertIn("  Razer Basilisk V3", shown)
+        self.assertIn("  Corsair Vengeance RGB Pro DDR4 ×2", shown)
+        self.assertNotIn("5:", "\n".join(shown))
+        self.assertIn("  Corsair Commander PRO", shown)
 
 
 class PaletteTest(unittest.TestCase):
