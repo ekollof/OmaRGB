@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Matcher and palette tests. No hardware."""
 
+import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -8,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from omargb.apply import run
+from omargb.apply import Report, run
+from omargb.console import status_mark
 from omargb.catalog import load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
 from omargb.scan import Hardware, scan
@@ -34,6 +38,16 @@ color13 = "#f19bf2"
 color14 = "#f3d7ff"
 color15 = "#fbf2fb"
 """
+
+
+class ConsoleTest(unittest.TestCase):
+    def test_status_mark_follows_the_report(self):
+        ready = Report(["theme solid #5c00ff stops #5c00ff", "vanguard_k08 dry-run #5c00ff"])
+        self.assertEqual(status_mark(ready, "plan"), ("32", "Ready"))
+        self.assertEqual(status_mark(ready, "apply"), ("32", "Done"))
+        self.assertEqual(status_mark(Report(["vanguard_k08: lighting interface not ready"], not_ready=True), "apply"), ("31", "Not ready"))
+        self.assertEqual(status_mark(Report(["asus_rog: asusctl missing"]), "apply"), ("31", "Failed"))
+        self.assertEqual(status_mark(Report(["no theme colours to apply"]), "apply"), ("90", "Nothing to paint"))
 
 
 class PaletteTest(unittest.TestCase):
@@ -168,6 +182,136 @@ class ScanTest(unittest.TestCase):
         self.assertIn(("dmi", "Example:Board"), found)
         self.assertIn(("dmi", "Framework:Laptop 16"), found)
         self.assertIn(("dmi", "Framework:Laptop 16 (AMD Ryzen 7040 Series)"), found)
+
+
+class InstallTest(unittest.TestCase):
+    def test_second_run_refreshes_and_drops_stale_copies(self):
+        project = Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary) / "home"
+            stub = Path(temporary) / "bin"
+            log = Path(temporary) / "systemctl.log"
+            home.mkdir()
+            stub.mkdir()
+            (stub / "systemctl").write_text(
+                "#!/bin/bash\n"
+                'printf "%s\\n" "$*" >> "$OMARGB_SYSTEMCTL_LOG"\n'
+                'if [[ $2 == is-enabled ]]; then exit 1; fi\n'
+                "exit 0\n"
+            )
+            (stub / "systemctl").chmod(0o755)
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            env["PATH"] = f"{stub}:{env.get('PATH', '')}"
+            env["OMARGB_SYSTEMCTL_LOG"] = str(log)
+            env["OMARGB_INSTALL_UPDATE"] = "0"
+
+            def install() -> subprocess.CompletedProcess[str]:
+                completed = subprocess.run(
+                    ["bash", str(project / "install.sh")],
+                    cwd=project,
+                    env=env,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                return completed
+
+            first = install()
+            self.assertIn("Installed into this session.", first.stdout)
+            share = home / ".local/share/omargb"
+            hooks = home / ".config/omarchy/hooks"
+            stale = share / "shims" / "retired-painter"
+            stale.write_text("old\n")
+            retired_unit = home / ".config/systemd/user/omargb-retired.path"
+            retired_unit.write_text("[Path]\n")
+            state = home / ".local/state/omargb/install.json"
+            recorded = json.loads(state.read_text())
+            recorded["installed"].append(str(retired_unit))
+            state.write_text(json.dumps(recorded, indent=2) + "\n")
+
+            second = install()
+            self.assertIn("Updated hooks, shims, and units from this checkout.", second.stdout)
+
+            self.assertFalse(stale.exists())
+            self.assertFalse(retired_unit.exists())
+            self.assertEqual((hooks / "theme-set.d/omargb").read_text(), (project / "hooks/theme-set.sh").read_text())
+            self.assertEqual((share / "shims/omarchy-theme-set-keyboard").read_text(), (project / "shims/omarchy-theme-set-keyboard").read_text())
+            self.assertEqual((share / "src").resolve(), project)
+            self.assertEqual((home / ".local/bin/omargb").resolve(), (project / "bin/omargb").resolve())
+            after = json.loads(state.read_text())
+            self.assertEqual(after["disabled_hooks"], [])
+            self.assertEqual(after["disabled_units"], [])
+            self.assertNotIn(str(retired_unit), after["installed"])
+            self.assertIn(str(share / "shims/omarchy-theme-set-keyboard"), after["installed"])
+            self.assertIn("enable --now omargb-theme.path", log.read_text())
+
+    def test_update_fast_forwards_a_clean_checkout_and_stops_when_diverged(self):
+        project = Path(__file__).resolve().parent.parent
+        ui = project / "share/omarchy-ui.sh"
+        with tempfile.TemporaryDirectory() as temporary:
+            origin = Path(temporary) / "origin"
+            checkout = Path(temporary) / "checkout"
+            relaunch = Path(temporary) / "relaunch"
+            marker = Path(temporary) / "relaunched"
+            origin.mkdir()
+            relaunch.write_text("#!/bin/bash\ngit -C \"$CHECKOUT\" rev-parse HEAD > \"$MARKER\"\n")
+            relaunch.chmod(0o755)
+            self._git(origin, "init", "-b", "master")
+            self._git(origin, "config", "user.email", "test@example.com")
+            self._git(origin, "config", "user.name", "Test")
+            (origin / "README").write_text("one\n")
+            self._git(origin, "add", "README")
+            self._git(origin, "commit", "-m", "one")
+            self._git(Path(temporary), "clone", str(origin), str(checkout))
+            self._git(checkout, "config", "user.email", "test@example.com")
+            self._git(checkout, "config", "user.name", "Test")
+            (origin / "README").write_text("two\n")
+            self._git(origin, "add", "README")
+            self._git(origin, "commit", "-m", "two")
+
+            forwarded = self._update(ui, checkout, relaunch, marker)
+            self.assertEqual(forwarded.returncode, 0, forwarded.stderr)
+            self.assertEqual(marker.read_text().strip(), self._git(origin, "rev-parse", "HEAD").stdout.strip())
+            self.assertEqual(self._git(checkout, "rev-parse", "HEAD").stdout, self._git(origin, "rev-parse", "HEAD").stdout)
+            self.assertIn("Updated this checkout", forwarded.stdout)
+
+            marker.unlink()
+            (checkout / "local").write_text("mine\n")
+            self._git(checkout, "add", "local")
+            self._git(checkout, "commit", "-m", "local")
+            (origin / "README").write_text("three\n")
+            self._git(origin, "add", "README")
+            self._git(origin, "commit", "-m", "three")
+            stayed = self._git(checkout, "rev-parse", "HEAD").stdout
+            diverged = self._update(ui, checkout, relaunch, marker)
+            self.assertEqual(diverged.returncode, 0, diverged.stderr)
+            self.assertFalse(marker.exists())
+            self.assertEqual(self._git(checkout, "rev-parse", "HEAD").stdout, stayed)
+            self.assertIn("ahead or diverged", diverged.stdout + diverged.stderr)
+
+    def _git(self, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(cwd), *args],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+
+    def _update(self, ui: Path, checkout: Path, relaunch: Path, marker: Path) -> subprocess.CompletedProcess[str]:
+        script = f"""
+set -euo pipefail
+root={checkout}
+# shellcheck disable=SC1091
+source "{ui}"
+omargb_update_checkout "{checkout}" "{relaunch}"
+"""
+        env = os.environ.copy()
+        env["CHECKOUT"] = str(checkout)
+        env["MARKER"] = str(marker)
+        env.pop("OMARGB_INSTALL_UPDATED", None)
+        return subprocess.run(["bash", "-c", script], text=True, capture_output=True, check=False, env=env)
 
 
 if __name__ == "__main__":

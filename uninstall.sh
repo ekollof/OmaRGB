@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+root=$(cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091
+source "$root/share/omarchy-ui.sh"
+omargb_banner
+
 bin_dir="$HOME/.local/bin"
 share_dir="$HOME/.local/share/omargb"
 state_dir="$HOME/.local/state/omargb"
@@ -37,4 +42,8 @@ PY
 fi
 
 systemctl --user daemon-reload
-echo "OmaRGB removed. A new login drops the shim directory from PATH."
+echo
+omargb_card "OmaRGB" "" "• Removed the hooks, the watcher, and the shims."
+echo
+omargb_ok "Done"
+omargb_muted "A new login drops the shim directory from PATH."

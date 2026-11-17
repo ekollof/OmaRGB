@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from omargb.apply import run
+from omargb.console import show_report
 
 LOCK = Path.home() / ".local/state/omargb/apply.lock"
 
@@ -21,7 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     with LOCK.open("a") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
         report = run(colors=args.colors, database=args.database, dry_run=args.command == "plan")
-    print(report.text())
+    show_report(report, args.command)
     return 75 if report.not_ready else 0
 
 

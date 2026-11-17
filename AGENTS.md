@@ -33,7 +33,7 @@ An engine is a class with `name` and `apply(theme, targets, dry_run) -> str | No
 ## Omarchy boundaries
 
 - Do not edit `/usr/share/omarchy` or the Omarchy source checkout to add a device. This project overrides those painters with hooks and PATH shims.
-- `install.sh` is allowed to step aside `~/.config/omarchy/hooks/*/vanguard-k08-rgb` and disable `vanguard-k08-theme-watch.service`. `uninstall.sh` puts them back from `~/.local/state/omargb/install.json`.
+- `install.sh` is allowed to step aside `~/.config/omarchy/hooks/*/vanguard-k08-rgb` and disable `vanguard-k08-theme-watch.service`. `uninstall.sh` puts them back from `~/.local/state/omargb/install.json`. A later install fast-forwards this checkout from its upstream when the worktree is clean, then refreshes the hooks, shims, units, and login PATH file and drops copies the tree no longer ships. It does not stash, reset, or merge local work, and it does not restore those painters. The `omargb` link points at this checkout, so the device database follows the tree.
 - Shims live in `~/.local/share/omargb/shims` and are prepended from `~/.config/uwsm/env.d/90-omargb` at the next graphical login. The theme-set hook is what paints before that login.
 - Do not open an Omarchy pull request for this work.
 

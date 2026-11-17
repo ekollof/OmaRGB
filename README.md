@@ -4,7 +4,7 @@
   <img src="assets/logo.jpg" alt="OmaRGB" width="192">
 </p>
 
-OmaRGB paints RGB hardware from the active Omarchy theme. The mark is the [Omarchy logo](https://omarchy.org/brand/omarchy-logo.svg), kept as published in `assets/omarchy-logo.svg`, with the project name added in `assets/logo.jpg`. `colors.toml` is the only colour source. Mice, DRAM, motherboard lighting, Corsair hubs, laptop keyboards, and the Sound BlasterX Vanguard K08 are selected from a database of USB, PCI, and board ids, then handed to a matching engine.
+OmaRGB paints RGB hardware from the active Omarchy theme. Mice, DRAM, motherboard lighting, Corsair hubs, laptop keyboards, and the Sound BlasterX Vanguard K08 are selected from a database of USB, PCI, and board ids, then handed to a matching engine.
 
 Omarchy's own painters (`omarchy-theme-set-keyboard`, OpenRGB, ASUS `asusctl`, Framework `qmk_hid`) turn the theme accent into a pale colour and send that. After install, those commands are shadowed and the theme-set hook runs OmaRGB instead.
 
@@ -16,6 +16,8 @@ Omarchy's own painters (`omarchy-theme-set-keyboard`, OpenRGB, ASUS `asusctl`, F
 
 This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. wallpaperctl rewrites `colors.toml` without running `omarchy theme set`.
 
+Running it again fast-forwards this checkout from its upstream when the worktree is clean, then refreshes the hooks, shims, and units. A dirty or diverged checkout is left untouched. The stepped-aside painters stay stepped aside. `omargb` and `share/devices.toml` are the files in this checkout, reached through the link.
+
 The next graphical login puts `~/.local/share/omargb/shims` first on `PATH`, which makes the stock RGB commands do nothing. Until that login, Omarchy may paint first and the theme hook corrects it.
 
 `uninstall.sh` removes the hooks, the watcher, and the shims, and puts back anything the installer stepped aside.
@@ -26,6 +28,8 @@ The next graphical login puts `~/.local/share/omargb/shims` first on `PATH`, whi
 omargb plan     # show the match and the colours, change nothing
 omargb apply    # paint matched hardware
 ```
+
+In a terminal the report uses Omarchy's gum theme: an accent border and the green or red status mark. The theme hook and the palette watcher are not a terminal, so they log the plain lines.
 
 A backlight cannot show a pastel. Each chosen theme hue has its white floor removed and its strongest channel turned fully on. Gradient devices get those stops in hue order. One-colour devices get the strongest stop. Black, white, and the terminal chrome slots `color0`, `color7`, `color8`, and `color15` are skipped.
 
