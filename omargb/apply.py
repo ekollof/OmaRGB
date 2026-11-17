@@ -96,7 +96,7 @@ def prepare(
         return Report(["behaviour rejected the config"])
     entries = load_database(database)
     hardware = scan(root)
-    # Keyboards come from the server itself, so the list is needed even when
+    # The server reports every controller, so the list is needed even when
     # no database row names OpenRGB.
     if openrgb_devices is None:
         openrgb_devices = list_devices()

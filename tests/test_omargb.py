@@ -421,7 +421,7 @@ class CatalogTest(unittest.TestCase):
         self.assertNotIn("Unlisted", names)
         painted = [name for target in targets for _index, name in target.openrgb_devices]
         self.assertIn("Razer Basilisk V3", painted)
-        self.assertNotIn("G513 RGB MECHANICAL GAMING KEYBOARD", painted)
+        self.assertIn("G513 RGB MECHANICAL GAMING KEYBOARD", painted)
         self.assertIn("Corsair Commander Pro", painted)
         self.assertEqual(painted.count("Corsair Vengeance RGB Pro DDR4"), 2)
         self.assertNotIn("Some Other Lamp", painted)
@@ -432,18 +432,56 @@ class CatalogTest(unittest.TestCase):
             (1, "Some Mouse", 11, False),
             (2, "G513 RGB MECHANICAL GAMING KEYBOARD", 107, True),
             (3, "Tiny Keyboard", 1, True),
+            (4, "Board LED", 0, False, True),
             (5, "Razer Basilisk V3", 11, False),
+            (6, "No Mode", 0, False, False),
         ]
         targets = match(self.entries, [], openrgb)
         names = [target.entry.name for target in targets]
         self.assertIn("G513 RGB MECHANICAL GAMING KEYBOARD", names)
-        self.assertNotIn("Some Mouse", names)
+        self.assertIn("Some Mouse", names)
         self.assertNotIn("Tiny Keyboard", names)
-        self.assertNotIn("Razer Basilisk V3", names)
+        self.assertNotIn("No Mode", names)
+        self.assertIn("Razer Basilisk V3", names)
         keyboard = next(target for target in targets if target.entry.name.startswith("G513"))
         self.assertEqual(keyboard.entry.effect, "gradient")
         self.assertEqual(keyboard.openrgb_leds, ((2, 107),))
         self.assertEqual(keyboard.entry.bus, "openrgb")
+        mouse = next(target for target in targets if target.entry.name == "Some Mouse")
+        self.assertEqual(mouse.entry.effect, "gradient")
+        board = next(target for target in targets if target.entry.name == "Board LED")
+        self.assertEqual(board.entry.effect, "solid")
+        self.assertEqual(board.openrgb_leds, ())
+
+    def test_an_openlinkhub_usb_id_needs_no_devices_row(self):
+        hardware = [Hardware("usb", "1b1c:0c3f", "iCUE LINK System Hub")]
+        targets = match(self.entries, hardware, [])
+        hub = next(target for target in targets if target.hardware.ident == "1b1c:0c3f")
+        self.assertEqual(hub.entry.engine, "openlinkhub")
+        self.assertEqual(hub.entry.effect, "solid")
+        self.assertEqual(hub.entry.fallback, "")
+        self.assertEqual(hub.entry.name, "iCUE LINK System Hub")
+
+    def test_a_per_led_device_on_the_openlinkhub_list_stays_with_openrgb(self):
+        hardware = [Hardware("usb", "1b1c:1b55", "K70 RGB MK.2")]
+        targets = match(self.entries, hardware, [(0, "Corsair K70 RGB MK.2", 120, True, True)])
+        self.assertEqual([target.entry.engine for target in targets], ["openrgb"])
+        self.assertEqual(targets[0].entry.effect, "gradient")
+
+    def test_a_static_openlinkhub_device_claims_its_openrgb_controller(self):
+        hardware = [Hardware("usb", "1b1c:0c2a", "iCUE COMMANDER Core XT")]
+        openrgb = [(1, "Corsair iCUE COMMANDER Core XT", 0, False, True)]
+        targets = match(self.entries, hardware, openrgb)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(targets[0].entry.engine, "openlinkhub")
+        self.assertEqual(targets[0].entry.fallback, "openrgb")
+        self.assertEqual(targets[0].openrgb_devices, ((1, "Corsair iCUE COMMANDER Core XT"),))
+
+    def test_the_commander_row_is_not_duplicated(self):
+        hardware = [Hardware("usb", "1b1c:0c10", "Commander PRO")]
+        targets = match(self.entries, hardware, [(4, "Corsair Commander Pro", 0, False, True)])
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(targets[0].entry.name, "Corsair Commander PRO")
 
     def test_a_database_row_claims_a_keyboard_before_the_generic_match(self):
         entries = [Entry("usb", "1532:0099", "Mouse", "openrgb", "solid", "Basilisk", "")]
@@ -701,9 +739,10 @@ class DepsTest(unittest.TestCase):
         self.assertIn("package\tarch\topenrgb", text)
         self.assertIn("package\tarch\tqmk-hid", text)
         self.assertIn("service\topenlinkhub.service", text)
+        self.assertIn("service\topenrgb.service", text)
         self.assertIn("udev\tdefault/udev/framework16-qmk-hid.rules\t/etc/udev/rules.d/50-framework16-qmk-hid.rules", text)
         self.assertNotIn("asusctl", text)
-        self.assertEqual(text.count("openrgb"), 1)
+        self.assertEqual(text.count("package\tarch\topenrgb"), 1)
 
     def test_no_hardware_installs_nothing(self):
         from omargb.deps import report
@@ -941,7 +980,7 @@ class OpenRgbTest(unittest.TestCase):
             return Link(_Buf(incoming))
 
         found = list_devices(opener)
-        self.assertEqual(found, [(5, "Razer Blackwidow V3", 132, True)])
+        self.assertEqual(found, [(5, "Razer Blackwidow V3", 132, True, True)])
         self.assertEqual(calls["n"], 2)
 
         def refuse():

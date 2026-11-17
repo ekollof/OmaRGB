@@ -6,9 +6,9 @@
 #   openrgb ids match the name OpenRGB prints, with shell wildcards.
 #   hass ids match a Home Assistant entity id from ~/.config/hass.cfg, with shell wildcards.
 # effect is solid (one colour) or gradient (the theme's LED stops).
-# An OpenRGB keyboard with per-key colour is painted without a row here.
-# Other OpenRGB devices need a row. A gradient needs Direct mode and more
-# than one LED. A single LED, or a device without Direct, stays one colour.
+# An OpenRGB device that can take a colour is painted without a row here.
+# More than one per-LED colour is a gradient. One LED, or a static mode, is
+# one colour. USB ids from OpenLinkHub's list live in openlinkhub.toml.
 # openrgb is the OpenRGB device name to paint when the engine is openrgb.
 # fallback is the engine used when the first one cannot run.
 

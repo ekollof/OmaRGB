@@ -1,0 +1,741 @@
+# USB ids from OpenLinkHub's supported-device list (vendor 1b1c).
+# DRAM on that list has no USB id. OpenRGB paints a stick when the server reports it.
+# A row in share/devices.toml for the same id wins. A per-LED OpenRGB device with
+# more than one LED stays with OpenRGB. Anything else here uses openlinkhub.
+# https://openlinkhub.dev/devices.html
+
+[[device]]
+id = "1b1c:0c3f"
+name = "iCUE LINK System Hub"
+
+[[device]]
+id = "1b1c:0c32"
+name = "iCUE COMMANDER Core"
+
+[[device]]
+id = "1b1c:0c1c"
+name = "iCUE COMMANDER Core"
+
+[[device]]
+id = "1b1c:0c2a"
+name = "iCUE COMMANDER Core XT"
+
+[[device]]
+id = "1b1c:0c56"
+name = "iCUE COMMANDER DUO"
+
+[[device]]
+id = "1b1c:0c35"
+name = "iCUE H100i RGB ELITE"
+
+[[device]]
+id = "1b1c:0c40"
+name = "iCUE H100i RGB ELITE"
+
+[[device]]
+id = "1b1c:0c36"
+name = "iCUE H115i RGB ELITE"
+
+[[device]]
+id = "1b1c:0c37"
+name = "iCUE H150i RGB ELITE"
+
+[[device]]
+id = "1b1c:0c41"
+name = "iCUE H150i RGB ELITE"
+
+[[device]]
+id = "1b1c:0c20"
+name = "iCUE H100i RGB PRO XT"
+
+[[device]]
+id = "1b1c:0c2d"
+name = "iCUE H100i RGB PRO XT"
+
+[[device]]
+id = "1b1c:0c21"
+name = "iCUE H115i RGB PRO XT"
+
+[[device]]
+id = "1b1c:0c22"
+name = "iCUE H150i RGB PRO XT"
+
+[[device]]
+id = "1b1c:0c17"
+name = "H115i RGB PLATINUM"
+
+[[device]]
+id = "1b1c:0c18"
+name = "H100i RGB PLATINUM"
+
+[[device]]
+id = "1b1c:0c19"
+name = "H100i RGB PLATINUM SE"
+
+[[device]]
+id = "1b1c:0c12"
+name = "H150i PLATINUM"
+
+[[device]]
+id = "1b1c:0c13"
+name = "H115i PLATINUM"
+
+[[device]]
+id = "1b1c:0c15"
+name = "H100i PLATINUM"
+
+[[device]]
+id = "1b1c:0c14"
+name = "CORSAIR ONE"
+
+[[device]]
+id = "1b1c:0c08"
+name = "H80i HYDRO"
+
+[[device]]
+id = "1b1c:0c09"
+name = "H100i HYDRO"
+
+[[device]]
+id = "1b1c:0c0a"
+name = "H115i HYDRO"
+
+[[device]]
+id = "1b1c:0c1a"
+name = "Lighting Node CORE"
+
+[[device]]
+id = "1b1c:0c0b"
+name = "Lighting Node PRO"
+
+[[device]]
+id = "1b1c:1d04"
+name = "Lighting Node PRO (SPEC-OMEGA)"
+
+[[device]]
+id = "1b1c:0c10"
+name = "Commander PRO"
+
+[[device]]
+id = "1b1c:1d00"
+name = "Commander PRO"
+
+[[device]]
+id = "1b1c:0c42"
+name = "XC7 ELITE LCD CPU Water Block"
+
+[[device]]
+id = "1b1c:0c57"
+name = "NAUTILUS LCD CAP"
+
+[[device]]
+id = "1b1c:0c55"
+name = "NAUTILUS LCD CAP"
+
+[[device]]
+id = "1b1c:1b8e"
+name = "iCUE NEXUS"
+
+[[device]]
+id = "1b1c:1bdc"
+name = "Slipstream Wireless"
+
+[[device]]
+id = "1b1c:1ba6"
+name = "Slipstream Wireless"
+
+[[device]]
+id = "1b1c:2b00"
+name = "Slipstream Wireless"
+
+[[device]]
+id = "1b1c:1b7f"
+name = "Slipstream Wireless"
+
+[[device]]
+id = "1b1c:2b1b"
+name = "Slipstream Wireless V2"
+
+[[device]]
+id = "1b1c:1b3d"
+name = "K55 RGB"
+
+[[device]]
+id = "1b1c:1bfe"
+name = "K55 CORE RGB"
+
+[[device]]
+id = "1b1c:2b05"
+name = "K55 CORE RGB"
+
+[[device]]
+id = "1b1c:2b20"
+name = "K55 CORE TKL RGB"
+
+[[device]]
+id = "1b1c:1ba4"
+name = "K55 PRO RGB"
+
+[[device]]
+id = "1b1c:1ba1"
+name = "K55 PRO RGB XT"
+
+[[device]]
+id = "1b1c:1b6e"
+name = "K57 RGB WIRELESS"
+
+[[device]]
+id = "1b1c:1ba0"
+name = "K60 PRO RGB"
+
+[[device]]
+id = "1b1c:1bad"
+name = "K60 PRO RGB LP"
+
+[[device]]
+id = "1b1c:2b10"
+name = "K65 PLUS"
+
+[[device]]
+id = "1b1c:2b07"
+name = "K65 PLUS"
+
+[[device]]
+id = "1b1c:2b23"
+name = "K65 PLUS"
+
+[[device]]
+id = "1b1c:1bd7"
+name = "K65 PRO MINI"
+
+[[device]]
+id = "1b1c:1baf"
+name = "K65 RGB MINI"
+
+[[device]]
+id = "1b1c:1bcf"
+name = "K65 RGB MINI"
+
+[[device]]
+id = "1b1c:1bc3"
+name = "K65 RGB MINI"
+
+[[device]]
+id = "1b1c:1b17"
+name = "K65 RGB"
+
+[[device]]
+id = "1b1c:1b39"
+name = "K65 RGB RAPIDFIRE"
+
+[[device]]
+id = "1b1c:1b4f"
+name = "K68 RGB"
+
+[[device]]
+id = "1b1c:1bfd"
+name = "K70 CORE RGB"
+
+[[device]]
+id = "1b1c:1bff"
+name = "K70 CORE RGB"
+
+[[device]]
+id = "1b1c:2b0a"
+name = "K70 CORE RGB"
+
+[[device]]
+id = "1b1c:1bb6"
+name = "K70 PRO MINI"
+
+[[device]]
+id = "1b1c:1bc0"
+name = "K70 MAX"
+
+[[device]]
+id = "1b1c:1bc6"
+name = "K70 RGB PRO"
+
+[[device]]
+id = "1b1c:1bb3"
+name = "K70 RGB PRO"
+
+[[device]]
+id = "1b1c:1bd4"
+name = "K70 RGB PRO"
+
+[[device]]
+id = "1b1c:1b36"
+name = "K70 LUX"
+
+[[device]]
+id = "1b1c:1b33"
+name = "K70 RGB LUX"
+
+[[device]]
+id = "1b1c:1b38"
+name = "K70 RGB RAPIDFIRE"
+
+[[device]]
+id = "1b1c:1b55"
+name = "K70 RGB MK.2"
+
+[[device]]
+id = "1b1c:1b49"
+name = "K70 RGB MK.2"
+
+[[device]]
+id = "1b1c:1b6b"
+name = "K70 RGB MK.2"
+
+[[device]]
+id = "1b1c:1b48"
+name = "STRAFE RGB MK.2"
+
+[[device]]
+id = "1b1c:1b20"
+name = "STRAFE RGB"
+
+[[device]]
+id = "1b1c:2b01"
+name = "K70 CORE TKL"
+
+[[device]]
+id = "1b1c:2b02"
+name = "K70 CORE TKL WIRELESS"
+
+[[device]]
+id = "1b1c:2b14"
+name = "K70 PRO TKL"
+
+[[device]]
+id = "1b1c:1bb9"
+name = "K70 RGB TKL CHAMPION SERIES"
+
+[[device]]
+id = "1b1c:1b73"
+name = "K70 RGB TKL CHAMPION SERIES"
+
+[[device]]
+id = "1b1c:1b11"
+name = "K95"
+
+[[device]]
+id = "1b1c:1b2d"
+name = "K95 PLATINUM"
+
+[[device]]
+id = "1b1c:1b89"
+name = "K95 PLATINUM XT"
+
+[[device]]
+id = "1b1c:1bab"
+name = "K100 AIR RGB"
+
+[[device]]
+id = "1b1c:1bc5"
+name = "K100"
+
+[[device]]
+id = "1b1c:1b7c"
+name = "K100"
+
+[[device]]
+id = "1b1c:1b7d"
+name = "K100"
+
+[[device]]
+id = "1b1c:2b04"
+name = "MAKR 75"
+
+[[device]]
+id = "1b1c:2b0e"
+name = "VANGUARD 96 PRO"
+
+[[device]]
+id = "1b1c:2b0d"
+name = "VANGUARD 96"
+
+[[device]]
+id = "1b1c:2b0f"
+name = "VANGUARD 96 WIRELESS"
+
+[[device]]
+id = "1b1c:2b21"
+name = "VANGUARD 99 AIR"
+
+[[device]]
+id = "1b1c:2b0c"
+name = "GALLEON 100 SD"
+
+[[device]]
+id = "1b1c:2b31"
+name = "CLIPPER PRO MINI 60"
+
+[[device]]
+id = "1b1c:1b93"
+name = "KATAR PRO"
+
+[[device]]
+id = "1b1c:1bac"
+name = "KATAR PRO XT"
+
+[[device]]
+id = "1b1c:1b94"
+name = "KATAR PRO WIRELESS"
+
+[[device]]
+id = "1b1c:1b5d"
+name = "IRONCLAW RGB"
+
+[[device]]
+id = "1b1c:1b4c"
+name = "IRONCLAW RGB WIRELESS"
+
+[[device]]
+id = "1b1c:2b32"
+name = "IRONCLAW SE WIRELESS"
+
+[[device]]
+id = "1b1c:1bb8"
+name = "NIGHTSABRE WIRELESS"
+
+[[device]]
+id = "1b1c:1be3"
+name = "SCIMITAR RGB ELITE"
+
+[[device]]
+id = "1b1c:1b8b"
+name = "SCIMITAR RGB ELITE"
+
+[[device]]
+id = "1b1c:1bdb"
+name = "SCIMITAR RGB ELITE WIRELESS"
+
+[[device]]
+id = "1b1c:2b22"
+name = "SCIMITAR ELITE WIRELESS SE"
+
+[[device]]
+id = "1b1c:1b3e"
+name = "SCIMITAR PRO RGB"
+
+[[device]]
+id = "1b1c:1b1e"
+name = "SCIMITAR RGB"
+
+[[device]]
+id = "1b1c:2b03"
+name = "M55"
+
+[[device]]
+id = "1b1c:1b70"
+name = "M55 RGB PRO"
+
+[[device]]
+id = "1b1c:1b7e"
+name = "DARK CORE RGB PRO SE WIRELESS"
+
+[[device]]
+id = "1b1c:1b80"
+name = "DARK CORE RGB PRO"
+
+[[device]]
+id = "1b1c:1b81"
+name = "DARK CORE RGB PRO"
+
+[[device]]
+id = "1b1c:1b4b"
+name = "DARK CORE RGB SE"
+
+[[device]]
+id = "1b1c:1b51"
+name = "DARK CORE RGB SE"
+
+[[device]]
+id = "1b1c:1bf0"
+name = "M75"
+
+[[device]]
+id = "1b1c:2b08"
+name = "M75 WIRELESS"
+
+[[device]]
+id = "1b1c:1bf1"
+name = "M75 WIRELESS"
+
+[[device]]
+id = "1b1c:1bf2"
+name = "M75 AIR WIRELESS"
+
+[[device]]
+id = "1b1c:1b9e"
+name = "M65 RGB ULTRA"
+
+[[device]]
+id = "1b1c:1b2e"
+name = "M65 PRO RGB"
+
+[[device]]
+id = "1b1c:1bb5"
+name = "M65 RGB ULTRA WIRELESS"
+
+[[device]]
+id = "1b1c:1bd6"
+name = "M65 RGB ULTRA WIRELESS"
+
+[[device]]
+id = "1b1c:1b5a"
+name = "M65 RGB ELITE"
+
+[[device]]
+id = "1b1c:1b75"
+name = "HARPOON RGB PRO"
+
+[[device]]
+id = "1b1c:1b5e"
+name = "HARPOON RGB WIRELESS"
+
+[[device]]
+id = "1b1c:2b2e"
+name = "HARPOON V2 WIRELESS"
+
+[[device]]
+id = "1b1c:1bb2"
+name = "DARKSTAR WIRELESS"
+
+[[device]]
+id = "1b1c:1b98"
+name = "SABRE RGB PRO WIRELESS"
+
+[[device]]
+id = "1b1c:1b79"
+name = "SABRE RGB PRO"
+
+[[device]]
+id = "1b1c:1b7a"
+name = "SABRE PRO CS"
+
+[[device]]
+id = "1b1c:2b28"
+name = "SABRE V2 PRO"
+
+[[device]]
+id = "1b1c:2b2a"
+name = "SABRE V2 PRO"
+
+[[device]]
+id = "1b1c:2b29"
+name = "SABRE V2 PRO MG"
+
+[[device]]
+id = "1b1c:2b34"
+name = "SABRE V2 PRO MG"
+
+[[device]]
+id = "1b1c:2b35"
+name = "SABRE V2 PRO CF"
+
+[[device]]
+id = "1b1c:2b25"
+name = "SABRE V2 PRO CF"
+
+[[device]]
+id = "1b1c:1b5c"
+name = "NIGHTSWORD RGB"
+
+[[device]]
+id = "1b1c:2b1c"
+name = "NIGHTSWORD V2"
+
+[[device]]
+id = "1b1c:1b74"
+name = "GLAIVE RGB PRO"
+
+[[device]]
+id = "1b1c:1b34"
+name = "GLAIVE RGB"
+
+[[device]]
+id = "1b1c:0a62"
+name = "VIRTUOSO RGB WIRELESS XT"
+
+[[device]]
+id = "1b1c:0a64"
+name = "VIRTUOSO RGB WIRELESS XT"
+
+[[device]]
+id = "1b1c:2a02"
+name = "VIRTUOSO MAX WIRELESS"
+
+[[device]]
+id = "1b1c:2a03"
+name = "VIRTUOSO MAX WIRELESS XBOX"
+
+[[device]]
+id = "1b1c:0a45"
+name = "VIRTUOSO SE"
+
+[[device]]
+id = "1b1c:0a3e"
+name = "VIRTUOSO SE"
+
+[[device]]
+id = "1b1c:0a3f"
+name = "VIRTUOSO SE"
+
+[[device]]
+id = "1b1c:0a3d"
+name = "VIRTUOSO SE"
+
+[[device]]
+id = "1b1c:0a40"
+name = "VIRTUOSO SE"
+
+[[device]]
+id = "1b1c:0a43"
+name = "VIRTUOSO"
+
+[[device]]
+id = "1b1c:0a44"
+name = "VIRTUOSO"
+
+[[device]]
+id = "1b1c:0a41"
+name = "VIRTUOSO"
+
+[[device]]
+id = "1b1c:0a42"
+name = "VIRTUOSO"
+
+[[device]]
+id = "1b1c:0a6a"
+name = "HS80 RGB WIRELESS"
+
+[[device]]
+id = "1b1c:0a73"
+name = "HS80 RGB WIRELESS"
+
+[[device]]
+id = "1b1c:0a69"
+name = "HS80 RGB WIRELESS"
+
+[[device]]
+id = "1b1c:0a88"
+name = "HS80 RGB USB"
+
+[[device]]
+id = "1b1c:0a97"
+name = "HS80 MAX WIRELESS"
+
+[[device]]
+id = "1b1c:2a0f"
+name = "HS80 MAX WIRELESS"
+
+[[device]]
+id = "1b1c:2a0c"
+name = "HS80 MAX WIRELESS XBOX"
+
+[[device]]
+id = "1b1c:2a05"
+name = "VOID MAX WIRELESS V2 XBOX"
+
+[[device]]
+id = "1b1c:2a08"
+name = "VOID WIRELESS V2"
+
+[[device]]
+id = "1b1c:2a12"
+name = "VOID WIRELESS MAX V2"
+
+[[device]]
+id = "1b1c:0a51"
+name = "VOID ELITE WIRELESS"
+
+[[device]]
+id = "1b1c:0a55"
+name = "VOID ELITE WIRELESS"
+
+[[device]]
+id = "1b1c:0a34"
+name = "ST100 RGB"
+
+[[device]]
+id = "1b1c:1b9b"
+name = "MM700 RGB"
+
+[[device]]
+id = "1b1c:1bc9"
+name = "MM700 RGB"
+
+[[device]]
+id = "1b1c:1b3b"
+name = "MM800 RGB POLARIS"
+
+[[device]]
+id = "1b1c:0c23"
+name = "LT100 Smart Lighting Tower"
+
+[[device]]
+id = "1b1c:1c07"
+name = "HX1000i"
+
+[[device]]
+id = "1b1c:1c1e"
+name = "HX1000i"
+
+[[device]]
+id = "1b1c:1c08"
+name = "HX1200i"
+
+[[device]]
+id = "1b1c:1c23"
+name = "HX1200i"
+
+[[device]]
+id = "1b1c:1c27"
+name = "HX1200i"
+
+[[device]]
+id = "1b1c:1c1f"
+name = "HX1500i"
+
+[[device]]
+id = "1b1c:1c05"
+name = "HX750i"
+
+[[device]]
+id = "1b1c:1c06"
+name = "HX850i"
+
+[[device]]
+id = "1b1c:1c0c"
+name = "RM850i"
+
+[[device]]
+id = "1b1c:1c0d"
+name = "RM1000i"
+
+[[device]]
+id = "1b1c:1c00"
+name = "LINK USB DONGLE (AXi)"
+
+[[device]]
+id = "1b1c:434d"
+name = "SCUF ENVISION PRO"
+
+[[device]]
+id = "1b1c:434e"
+name = "SCUF ENVISION PRO"
+
+[[device]]
+id = "1b1c:3a08"
+name = "SCUF ENVISION PRO V2"
+
+[[device]]
+id = "1b1c:3a05"
+name = "SCUF ENVISION PRO V2"
+
+[[device]]
+id = "1b1c:1d0d"
+name = "XENEON EDGE"

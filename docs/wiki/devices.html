@@ -23,7 +23,8 @@
       <a href="https://github.com/ekollof/OmaRGB">Source</a>
     </nav>
     <h1>Devices</h1>
-    <p>OmaRGB paints a device when a row in <a href="https://github.com/ekollof/OmaRGB/blob/master/share/devices.toml"><code>share/devices.toml</code></a> matches it. One class does not need a row: an OpenRGB keyboard with a per-LED mode and more than one LED. Anything else the server can see stays dark.</p>
+    <p>OmaRGB paints a device when a row in <a href="https://github.com/ekollof/OmaRGB/blob/master/share/devices.toml"><code>share/devices.toml</code></a> matches it, when the OpenRGB server reports a controller that can take a colour, or when its USB id is in <a href="https://github.com/ekollof/OmaRGB/blob/master/share/openlinkhub.toml"><code>share/openlinkhub.toml</code></a>. A Home Assistant lamp stays dark unless <code>hass.cfg</code> lists it.</p>
+    <p>OpenRGB and OpenLinkHub keep the hardware lists. OmaRGB paints a device they can already drive: <a href="https://openrgb.org/devices_1.1.html">OpenRGB 1.1 supported devices</a> and <a href="https://openlinkhub.dev/devices.html">OpenLinkHub supported devices</a>.</p>
 
     <h2>Supported</h2>
     <p>A gradient uses the theme's colour stops. A solid device uses one stop. OpenRGB sets that mode's full brightness when the mode has a brightness range.</p>
@@ -33,10 +34,16 @@
       </thead>
       <tbody>
         <tr>
-          <td>OpenRGB keyboards</td>
-          <td>The server reports the device type keyboard, with a per-LED mode and more than one LED</td>
+          <td>OpenRGB controllers</td>
+          <td>The server reports a device that can take a colour, and no row claimed it</td>
           <td><code>openrgb</code></td>
-          <td>Gradient, left to right, one colour per column when the keyboard has a matrix</td>
+          <td>Gradient when it has more than one per-LED colour. A keyboard matrix is one colour per column, left to right. One LED, or a static mode, is one colour</td>
+        </tr>
+        <tr>
+          <td>OpenLinkHub USB devices</td>
+          <td>USB <code>1b1c:</code> product id in <code>share/openlinkhub.toml</code></td>
+          <td><code>openlinkhub</code>, then <code>openrgb</code> when that server can see it</td>
+          <td>One colour. A controller with more than one per-LED colour stays with OpenRGB</td>
         </tr>
         <tr>
           <td>Sound BlasterX Vanguard K08</td>

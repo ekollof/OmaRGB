@@ -120,13 +120,14 @@ class OpenRgb:
             link.close()
 
 
-def list_devices(opener=None) -> list[tuple[int, str, int, bool]]:
+def list_devices(opener=None) -> list[tuple[int, str, int, bool, bool]]:
     """Indexed devices from the OpenRGB server.
 
     The third field is the LED count when the device has a per-LED mode and
     more than one LED, otherwise 0. The fourth field is true for a keyboard.
-    A server that is not answering yields an empty list, so the other engines
-    still run.
+    The fifth is true when the device can take a colour, including one LED
+    and a static mode with no LED list. A server that is not answering yields
+    an empty list, so the other engines still run.
     """
     opened = session(opener or connect)
     if not isinstance(opened, tuple):
@@ -134,7 +135,13 @@ def list_devices(opener=None) -> list[tuple[int, str, int, bool]]:
     link, found = opened
     try:
         return [
-            (controller.index, controller.name, controller.gradient_count, controller.keyboard)
+            (
+                controller.index,
+                controller.name,
+                controller.gradient_count,
+                controller.keyboard,
+                controller.per_led_mode is not None or static_mode(controller) is not None,
+            )
             for controller in found
         ]
     finally:

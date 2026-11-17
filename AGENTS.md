@@ -14,6 +14,7 @@ OmaRGB paints RGB hardware from the active Omarchy theme. This file is the worki
 | Change | Where |
 |---|---|
 | A known device, existing engine | `share/devices.toml` |
+| OpenLinkHub USB ids | `share/openlinkhub.toml` |
 | How a protocol paints | `omargb/engines/<name>.py`, then register it in `omargb/engines/__init__.py` |
 | Packages, a system service, or a udev rule a painter needs | `share/painters.toml` |
 | Which ids match which engine | `omargb/catalog.py` |
@@ -24,15 +25,15 @@ OmaRGB paints RGB hardware from the active Omarchy theme. This file is the worki
 
 The site pages under `docs/wiki/` and the GitHub wiki (`Home`, `Devices`, `Engines`, `Extending`, `From-Omarchy`, and `_Sidebar`) say the same thing. A change to either is unfinished until the other matches.
 
-Paint a device only when the database matches it. An OpenRGB keyboard with a per-LED mode and more than one LED is the exception: the server reports the type, and no row is required. An unlisted lamp stays dark.
+Paint a device only when the database matches it, when the OpenRGB server reports a controller that can take a colour, or when its USB id is in `share/openlinkhub.toml`. A Home Assistant lamp stays dark unless `hass.cfg` lists it.
 
 ## Engines
 
 An engine is a class with `name` and `apply(theme, targets, dry_run) -> str | None`. `dry_run` must not open hardware. A failure string that contains `unavailable`, `rejected`, `missing`, `failed`, or `not ready` lets `omargb/apply.py` try `fallback` from the database row.
 
 - `vanguard_k08` reads the live 8192-byte map and writes only the primary RGB bytes at `0x09 + led*50 + 2`. Leave the macro table at `0x1960` alone. Do not commit a personal `block-template.bin`. The firmware needs about 350 ms between the four chunks.
-- `openrgb` talks to the local server on `127.0.0.1:6742` (protocol 4). A keyboard the server reports, with a per-LED mode and more than one LED, gets the theme stops left to right, one colour per column. It does not need a database row. Anything else with a per-LED mode and more than one LED gets the theme stops only when a row names it. A listed device with no per-LED gradient gets one theme colour, at that mode's full brightness. It does not own devices another engine already claimed.
-- `openlinkhub` posts to `http://127.0.0.1:27003/api/color/all`. The `openlinkhub` binary itself panics outside the system service.
+- `openrgb` talks to the local server on `127.0.0.1:6742` (protocol 4). Any controller that can take a colour is painted, with no database row. More than one per-LED colour is a gradient. A keyboard matrix is one colour per column, left to right. One LED, or a static mode, is one theme colour at that mode's full brightness. It does not own a device another engine already claimed.
+- `openlinkhub` posts to `http://127.0.0.1:27003/api/color/all`. USB ids from OpenLinkHub's supported-device list are in `share/openlinkhub.toml`. A database row for the same id wins. A controller with more than one per-LED colour stays with OpenRGB. The `openlinkhub` binary itself panics outside the system service.
 - `asus_rog` and `framework16` replace Omarchy quattro's laptop painters (`omarchy-theme-set-keyboard-asus-rog` and `omarchy-theme-set-keyboard-f16`). The database rows match the same machines as `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. Framework hue and saturation follow `colorsys`, which is what Omarchy's QMK helper matches. The colour is still the theme solid from `colors.toml`, not the raw `keyboard.rgb` accent.
 - `homeassistant` reads `~/.config/hass.cfg` (`[auth]` with `server`, `token`, and `lamp`), the same file wallpaperctl uses. It sets `rgb_color` on a lamp that is already on. The colour is one theme stop chosen by `behaviour.json` `strategy` (`warmest` by default, also `least_blue`, `most_saturated`, `coolest`, `brightest`), scored the way wallpaperctl's `rgb_color_strategy` scores a palette line. Other engines keep the most saturated stop. The file must not be readable by group or other. `dry_run` does not call the API. A lamp stays dark unless that file lists it and a database row matches the entity id. Do not commit the config or the token.
 

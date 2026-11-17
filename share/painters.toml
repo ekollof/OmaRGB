@@ -7,6 +7,7 @@
 engine = "openrgb"
 source = "arch"
 packages = ["openrgb"]
+service = "openrgb.service"
 
 [[painter]]
 engine = "openlinkhub"

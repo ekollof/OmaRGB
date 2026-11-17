@@ -45,13 +45,13 @@
 
     <h2>What is different</h2>
     <p>The colour is a stop from <code>colors.toml</code>, after the white floor is removed. It is not the raw <code>keyboard.rgb</code> accent.</p>
-    <p>Omarchy's OpenRGB painter reads that accent, mixes it 40% toward white, and prefers a mode whose name contains "gradient". If the scan fails it falls back to one static broadcast. OmaRGB does not mix toward white and does not broadcast. It talks to the OpenRGB server on <code>127.0.0.1:6742</code>. A per-key keyboard gets the theme stops left to right. Any other device is painted only when a database row names it, in Direct mode when that device can take a colour per LED, otherwise as one colour.</p>
+    <p>Omarchy's OpenRGB painter reads that accent, mixes it 40% toward white, and prefers a mode whose name contains "gradient". If the scan fails it falls back to one static broadcast. OmaRGB does not mix toward white and does not broadcast. It talks to the OpenRGB server on <code>127.0.0.1:6742</code>. Every controller that can take a colour is painted. A per-key keyboard gets the theme stops left to right. One LED, or a static mode, is one colour.</p>
     <p>Home Assistant lamps use the warmest stop by default. The bar can cycle warmest, least blue, most saturated, coolest, and brightest. A lamp that is off stays off.</p>
 
     <h2>What is not from Omarchy</h2>
     <ul>
       <li>The Sound BlasterX Vanguard K08 painter. It replaces a local hook, not a mainline Omarchy command, and it writes only the LED bytes in the keyboard's lighting map.</li>
-      <li>OpenLinkHub for the Corsair Commander PRO.</li>
+      <li>OpenLinkHub for the USB devices on its supported list, including the Corsair Commander PRO.</li>
       <li>Home Assistant. Lamps come from <code>~/.config/hass.cfg</code>, the same file wallpaperctl uses.</li>
       <li>The palette watcher. OmaRGB watches <code>colors.toml</code> and <code>keyboard.rgb</code>, so a later rewrite still recolours the hardware. <a href="https://github.com/ekollof/wallpaperctl">wallpaperctl</a> is a separate package and is not required. It is a recommended way to rebuild that palette from the wallpaper without running <code>omarchy theme set</code>.</li>
     </ul>
