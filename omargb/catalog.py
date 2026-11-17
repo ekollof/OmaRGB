@@ -58,6 +58,7 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
     """
     openrgb_devices = openrgb_devices or []
     claimed: set[int] = set()
+    claimed_hass: set[str] = set()
     targets: list[Target] = []
 
     for entry in entries:
@@ -67,6 +68,12 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
                 continue
             claimed.update(index for index, _name in hits)
             targets.append(Target(entry, Hardware("openrgb", entry.ident, entry.name), tuple(hits)))
+            continue
+
+        if entry.bus == "hass":
+            hits = [item for item in hardware if _ident_matches(entry, item) and item.ident not in claimed_hass]
+            claimed_hass.update(item.ident for item in hits)
+            targets.extend(Target(entry, item) for item in hits)
             continue
 
         device = next((item for item in hardware if _ident_matches(entry, item)), None)

@@ -41,6 +41,7 @@ Branch from the default branch. Mention the issue in the pull request body (`Fix
 
 - Database-only changes touch `share/devices.toml` and, when the match rule is new, a case in `tests/test_omargb.py`.
 - A new engine is a module in `omargb/engines/`, registered in `omargb/engines/__init__.py`, with `apply(theme, targets, dry_run)`. `dry_run` must not open the device.
+- List that engine's dependencies in `share/painters.toml`. `source` is `arch` or `aur`. Name every package, and a system service or udev rule when the painter needs one. An engine with no packages gets no block. `install.sh` installs those packages only when a matched device uses the engine.
 - Colours still come from `colors.toml` through `omargb/theme.py`. Do not add a second palette.
 - Run `python3 tests/test_omargb.py` and paste the result in the pull request.
 - If you can run the hardware, also paste `omargb plan` from after the change.

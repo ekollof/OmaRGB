@@ -1,7 +1,9 @@
-"""USB, PCI, and firmware board identifiers."""
+"""USB, PCI, board, and Home Assistant lamp identifiers."""
 
 from dataclasses import dataclass
 from pathlib import Path
+
+from omargb.hasscfg import HassConfigError, config_path, load
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,7 @@ def scan(root: Path | None = None) -> list[Hardware]:
     found.extend(_usb(root))
     found.extend(_pci(root))
     found.extend(_dmi(root))
+    found.extend(_hass(root))
     return found
 
 
@@ -68,6 +71,15 @@ def _dmi(root: Path) -> list[Hardware]:
         if sys_vendor and label:
             found.append(Hardware("dmi", f"{sys_vendor}:{label}", label))
     return found
+
+
+def _hass(root: Path) -> list[Hardware]:
+    path = config_path() if root == Path("/") else root / "config/hass.cfg"
+    try:
+        config = load(path)
+    except HassConfigError:
+        return []
+    return [Hardware("hass", lamp, lamp) for lamp in config.lamps]
 
 
 def _text(path: Path) -> str:

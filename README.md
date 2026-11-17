@@ -16,7 +16,7 @@ After install, Omarchy's RGB commands (`omarchy-theme-set-keyboard`, OpenRGB, AS
 ~/Work/OmaRGB/install.sh
 ```
 
-This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. [wallpaperctl](https://github.com/ekollof/wallpaperctl) builds that palette from the current wallpaper and rewrites `colors.toml` without running `omarchy theme set`.
+This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. It installs a painter's packages only when this machine has a matching device. The package list is `share/painters.toml`. [wallpaperctl](https://github.com/ekollof/wallpaperctl) builds that palette from the current wallpaper and rewrites `colors.toml` without running `omarchy theme set`.
 
 Running it again fast-forwards this checkout from its upstream when the worktree is clean, then refreshes the hooks, shims, and units. A dirty or diverged checkout is left untouched. The stepped-aside painters stay stepped aside. `omargb` and `share/devices.toml` are the files in this checkout, reached through the link.
 
@@ -41,14 +41,14 @@ New devices and engines start as a GitHub issue. The steps are in [CONTRIBUTE.md
 
 | Field | Meaning |
 |---|---|
-| `bus` | `usb`, `pci`, `dmi`, or `openrgb` |
-| `id` | `vendor:product` hex, `vendor:name` for a DMI board, product family, or product name (wildcards allowed), or an OpenRGB device name |
-| `engine` | `vanguard_k08`, `openrgb`, `openlinkhub`, `asus_rog`, or `framework16` |
+| `bus` | `usb`, `pci`, `dmi`, `openrgb`, or `hass` |
+| `id` | `vendor:product` hex, `vendor:name` for a DMI board, product family, or product name, an OpenRGB device name, or a Home Assistant entity id (wildcards allowed) |
+| `engine` | `vanguard_k08`, `openrgb`, `openlinkhub`, `asus_rog`, `framework16`, or `homeassistant` |
 | `effect` | `solid` or `gradient` |
 | `openrgb` | Name substring, when that engine has to find the device inside OpenRGB |
 | `fallback` | Engine used when the first one cannot run |
 
-USB and PCI ids come from `lsusb` and `lspci -nn`. A board that has no USB lighting id is matched on `board_vendor:board_name`, `sys_vendor:product_family`, or `sys_vendor:product_name` from `/sys/class/dmi/id`. The ASUS ROG and Framework Laptop 16 rows use the same DMI checks as Omarchy's `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. DRAM that only OpenRGB can see uses `bus = "openrgb"`. Anything not listed is left alone.
+USB and PCI ids come from `lsusb` and `lspci -nn`. A board that has no USB lighting id is matched on `board_vendor:board_name`, `sys_vendor:product_family`, or `sys_vendor:product_name` from `/sys/class/dmi/id`. The ASUS ROG and Framework Laptop 16 rows use the same DMI checks as Omarchy's `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. DRAM that only OpenRGB can see uses `bus = "openrgb"`. Home Assistant lamps come from `~/.config/hass.cfg` (`[auth]` with `server`, `token`, and a comma-separated `lamp` list). The file must be readable only by its owner. A lamp is painted when that list names it and a `hass` row matches the entity id. Anything not listed is left alone.
 
 Engines live in `omargb/engines/`. A new engine is a class with `name` and `apply(theme, targets, dry_run)`, registered in `omargb/engines/__init__.py`.
 
@@ -58,6 +58,7 @@ Engines live in `omargb/engines/`. A new engine is a class with `name` and `appl
 - `openrgb` sets static mode at full brightness to the theme colour.
 - `openlinkhub` posts the theme colour to the local OpenLinkHub service (`127.0.0.1:27003`, `/api/color/all`). If that service is down, the Commander Pro entry falls back to OpenRGB.
 - `asus_rog` and `framework16` cover the laptop keyboards Omarchy used to paint itself.
+- `homeassistant` sets the theme colour on Home Assistant lights that are already on.
 
 ## Tests
 

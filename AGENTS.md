@@ -15,8 +15,9 @@ OmaRGB paints RGB hardware from the active Omarchy theme. This file is the worki
 |---|---|
 | A known device, existing engine | `share/devices.toml` |
 | How a protocol paints | `omargb/engines/<name>.py`, then register it in `omargb/engines/__init__.py` |
+| Packages, a system service, or a udev rule a painter needs | `share/painters.toml` |
 | Which ids match which engine | `omargb/catalog.py` |
-| USB, PCI, and board discovery | `omargb/scan.py` |
+| USB, PCI, board, and Home Assistant discovery | `omargb/scan.py` |
 | Install, hooks, login PATH | `install.sh`, `uninstall.sh`, `hooks/`, `shims/`, `systemd/` |
 
 Paint a device only when the database matches it. An unlisted lamp stays dark.
@@ -29,6 +30,7 @@ An engine is a class with `name` and `apply(theme, targets, dry_run) -> str | No
 - `openrgb` is static mode, full brightness, one theme colour. It does not own devices another engine already claimed.
 - `openlinkhub` posts to `http://127.0.0.1:27003/api/color/all`. The `openlinkhub` binary itself panics outside the system service.
 - `asus_rog` and `framework16` replace Omarchy quattro's laptop painters (`omarchy-theme-set-keyboard-asus-rog` and `omarchy-theme-set-keyboard-f16`). The database rows match the same machines as `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. Framework hue and saturation follow `colorsys`, which is what Omarchy's QMK helper matches. The colour is still the theme solid from `colors.toml`, not the raw `keyboard.rgb` accent.
+- `homeassistant` reads `~/.config/hass.cfg` (`[auth]` with `server`, `token`, and `lamp`), the same file wallpaperctl uses. It sets `rgb_color` on a lamp that is already on. The file must not be readable by group or other. `dry_run` does not call the API. A lamp stays dark unless that file lists it and a database row matches the entity id. Do not commit the config or the token.
 
 ## Omarchy boundaries
 
@@ -51,5 +53,5 @@ omargb plan
 - Python 3.11 or newer. Standard library only.
 - Bash scripts use `#!/bin/bash`, `set -euo pipefail`, `[[ ]]`, and `(( ))`.
 - Markdown lines are not hard-wrapped.
-- Device ids in the database are lowercase hex `vendor:product`, or a shell wildcard for DMI and OpenRGB names.
+- Device ids in the database are lowercase hex `vendor:product`, or a shell wildcard for DMI, OpenRGB, and Home Assistant entity names.
 - One coherent change per commit. Do not commit or push unless the user asks.

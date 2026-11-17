@@ -24,10 +24,22 @@ body:
     validations:
       required: true
   - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Packages and services this painter needs on Omarchy. Write none if it uses only the standard library. These go in share/painters.toml.
+      placeholder: |
+        arch: qmk-hid
+        aur: openlinkhub-bin
+        service: openlinkhub.service
+        udev: default/udev/example.rules -> /etc/udev/rules.d/50-example.rules
+    validations:
+      required: true
+  - type: textarea
     id: why
     attributes:
       label: Why the current engines cannot paint it
-      description: The engines shipped now are vanguard_k08, openrgb, openlinkhub, asus_rog, and framework16.
+      description: The engines shipped now are vanguard_k08, openrgb, openlinkhub, asus_rog, framework16, and homeassistant.
     validations:
       required: true
   - type: textarea

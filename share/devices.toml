@@ -1,9 +1,10 @@
 # Hardware RGB database. OmaRGB paints a device only when an entry here matches.
-# bus is usb, pci, dmi, or openrgb.
+# bus is usb, pci, dmi, openrgb, or hass.
 #   usb / pci ids are vendor:product, lowercase hex (041e:3126).
 #   dmi ids are "vendor:name", with shell wildcards. The name is the board
 #   name, the product family, or the product name. Matching is case-insensitive.
 #   openrgb ids match the name OpenRGB prints, with shell wildcards.
+#   hass ids match a Home Assistant entity id from ~/.config/hass.cfg, with shell wildcards.
 # effect is solid (one colour) or gradient (the theme's LED stops).
 # openrgb is the OpenRGB device name to paint when the engine is openrgb.
 # fallback is the engine used when the first one cannot run.
@@ -69,4 +70,12 @@ bus = "openrgb"
 id = "Corsair Vengeance RGB Pro*"
 name = "Corsair Vengeance RGB Pro"
 engine = "openrgb"
+effect = "solid"
+
+# Lamps listed in ~/.config/hass.cfg. light.* is every light entity in that file.
+[[device]]
+bus = "hass"
+id = "light.*"
+name = "Home Assistant light"
+engine = "homeassistant"
 effect = "solid"

@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -15,8 +16,9 @@ from omargb.apply import Report, run
 from omargb.console import present_lines, status_mark
 from omargb.catalog import load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
+from omargb.engines.homeassistant import HomeAssistant
 from omargb.scan import Hardware, scan
-from omargb.theme import load_theme, parse_rgb, to_led
+from omargb.theme import Theme, load_theme, parse_rgb, to_led
 
 PURPLE = """
 mode = "dark"
@@ -223,6 +225,7 @@ class InstallTest(unittest.TestCase):
             env["PATH"] = f"{stub}:{env.get('PATH', '')}"
             env["OMARGB_SYSTEMCTL_LOG"] = str(log)
             env["OMARGB_INSTALL_UPDATE"] = "0"
+            env["OMARGB_INSTALL_DEPS"] = "0"
 
             def install() -> subprocess.CompletedProcess[str]:
                 completed = subprocess.run(
@@ -330,6 +333,142 @@ omargb_update_checkout "{checkout}" "{relaunch}"
         env["MARKER"] = str(marker)
         env.pop("OMARGB_INSTALL_UPDATED", None)
         return subprocess.run(["bash", "-c", script], text=True, capture_output=True, check=False, env=env)
+
+
+class DepsTest(unittest.TestCase):
+    def test_packages_follow_matched_engines_including_fallback(self):
+        from omargb.deps import report
+
+        text = report(
+            [
+                Hardware("usb", "1b1c:0c10", "Corsair Commander PRO"),
+                Hardware("usb", "041e:3126", "Sound BlasterX Vanguard K08"),
+                Hardware("dmi", "Framework:Laptop 16", "Framework Laptop 16"),
+            ],
+            [],
+        )
+        self.assertIn("device\tCorsair Commander PRO", text)
+        self.assertIn("device\tSound BlasterX Vanguard K08", text)
+        self.assertIn("package\taur\topenlinkhub-bin", text)
+        self.assertIn("package\tarch\topenrgb", text)
+        self.assertIn("package\tarch\tqmk-hid", text)
+        self.assertIn("service\topenlinkhub.service", text)
+        self.assertIn("udev\tdefault/udev/framework16-qmk-hid.rules\t/etc/udev/rules.d/50-framework16-qmk-hid.rules", text)
+        self.assertNotIn("asusctl", text)
+        self.assertEqual(text.count("openrgb"), 1)
+
+    def test_no_hardware_installs_nothing(self):
+        from omargb.deps import report
+
+        self.assertEqual(report([], []), "")
+
+
+class HassTest(unittest.TestCase):
+    def test_scan_reads_lamps_and_drops_a_bad_entity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = root / "config/hass.cfg"
+            config.parent.mkdir()
+            config.write_text(
+                "[auth]\n"
+                "server = http://hass.example:8123/\n"
+                "token = test-token\n"
+                "lamp = light.zolder, light.bad name, switch.other\n"
+            )
+            found = [item.ident for item in scan(root) if item.bus == "hass"]
+        self.assertEqual(found, ["light.zolder", "switch.other"])
+
+    def test_database_matches_every_light_and_leaves_other_entities_dark(self):
+        entries = load_database()
+        hardware = [
+            Hardware("hass", "light.zolder", "light.zolder"),
+            Hardware("hass", "light.ledstrip", "light.ledstrip"),
+            Hardware("hass", "switch.other", "switch.other"),
+        ]
+        matched = [target.hardware.ident for target in match(entries, hardware, [])]
+        self.assertEqual(matched, ["light.zolder", "light.ledstrip"])
+
+    def test_dry_run_does_not_call_the_api(self):
+        targets = match(
+            load_database(),
+            [Hardware("hass", "light.zolder", "light.zolder")],
+            [],
+        )
+        theme = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+
+        def explode(*_args, **_kwargs):
+            raise AssertionError("dry_run called the API")
+
+        with patch("omargb.engines.homeassistant.urllib.request.urlopen", explode):
+            text = HomeAssistant().apply(theme, targets, dry_run=True)
+        self.assertEqual(text, "homeassistant dry-run light.zolder #0091ff")
+
+    def test_apply_sets_rgb_only_when_the_light_is_on(self):
+        targets = match(
+            load_database(),
+            [
+                Hardware("hass", "light.zolder", "light.zolder"),
+                Hardware("hass", "light.off", "light.off"),
+            ],
+            [],
+        )
+        theme = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        posted: list[dict] = []
+
+        class Response:
+            def __init__(self, payload: str) -> None:
+                self.payload = payload
+
+            def read(self) -> bytes:
+                return self.payload.encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args) -> bool:
+                return False
+
+        def urlopen(request, timeout=0):
+            self.assertEqual(timeout, 10)
+            self.assertTrue(request.get_header("Authorization", "").startswith("Bearer "))
+            if request.get_method() == "GET":
+                state = "on" if request.full_url.endswith("light.zolder") else "off"
+                return Response(json.dumps({"state": state}))
+            posted.append(json.loads(request.data.decode()))
+            return Response("")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "hass.cfg"
+            path.write_text("[auth]\nserver=http://hass.example\ntoken=test-token\nlamp=light.zolder, light.off\n")
+            path.chmod(0o600)
+            with (
+                patch("omargb.engines.homeassistant.config_path", return_value=path),
+                patch("omargb.engines.homeassistant.urllib.request.urlopen", urlopen),
+            ):
+                text = HomeAssistant().apply(theme, targets, dry_run=False)
+        self.assertEqual(posted, [{"entity_id": "light.zolder", "rgb_color": [0, 145, 255]}])
+        self.assertIn("light.zolder #0091ff", text)
+        self.assertIn("light.off off", text)
+        self.assertNotIn("test-token", text or "")
+
+    def test_loose_config_is_rejected_without_a_request(self):
+        targets = match(load_database(), [Hardware("hass", "light.zolder", "light.zolder")], [])
+        theme = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "hass.cfg"
+            path.write_text("[auth]\nserver=http://hass.example\ntoken=test-token\nlamp=light.zolder\n")
+            path.chmod(0o644)
+
+            def explode(*_args, **_kwargs):
+                raise AssertionError("a loose config called the API")
+
+            with (
+                patch("omargb.engines.homeassistant.config_path", return_value=path),
+                patch("omargb.engines.homeassistant.urllib.request.urlopen", explode),
+            ):
+                text = HomeAssistant().apply(theme, targets, dry_run=False)
+        self.assertIn("rejected", text or "")
+        self.assertNotIn("test-token", text or "")
 
 
 if __name__ == "__main__":

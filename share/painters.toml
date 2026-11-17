@@ -1,0 +1,28 @@
+# Packages a painter needs on Omarchy. install.sh installs them only when a
+# matched device uses the engine. source is "arch" (omarchy-pkg-add) or "aur"
+# (omarchy-pkg-aur-add). An engine with no packages has no block here.
+# A new engine adds its block in the same change as the engine.
+
+[[painter]]
+engine = "openrgb"
+source = "arch"
+packages = ["openrgb"]
+
+[[painter]]
+engine = "openlinkhub"
+source = "aur"
+packages = ["openlinkhub-bin"]
+service = "openlinkhub.service"
+
+[[painter]]
+engine = "asus_rog"
+source = "arch"
+packages = ["asusctl"]
+
+[[painter]]
+engine = "framework16"
+source = "arch"
+packages = ["qmk-hid"]
+# The package does not ship the unprivileged hidraw rule. Omarchy keeps it here.
+udev = "default/udev/framework16-qmk-hid.rules"
+udev_dest = "/etc/udev/rules.d/50-framework16-qmk-hid.rules"

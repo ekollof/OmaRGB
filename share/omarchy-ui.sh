@@ -19,8 +19,12 @@ omargb_banner() {
 }
 
 omargb_card() {
+  local columns=80
   if command -v gum >/dev/null 2>&1; then
-    gum style --border normal --padding "1 2" -- "$@" || true
+    columns=$(tput cols 2>/dev/null || echo 80)
+    if (( columns > 64 )); then columns=64; fi
+    if (( columns < 42 )); then columns=42; fi
+    gum style --border normal --padding "1 2" --width "$columns" -- "$@" || true
   else
     printf '%s\n' "$@"
   fi

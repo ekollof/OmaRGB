@@ -139,16 +139,88 @@ PY
 systemctl --user daemon-reload
 systemctl --user enable --now omargb-theme.path
 
+hardware=()
+pkg_names=()
+if [[ ${OMARGB_INSTALL_DEPS:-1} == 1 ]]; then
+  deps_output=$(python3 - "$root" << 'PY'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root))
+from omargb.deps import report
+from omargb.engines.openrgb import list_devices
+from omargb.scan import scan
+
+sys.stdout.write(report(scan(), list_devices()))
+PY
+)
+  arch_pkgs=()
+  aur_pkgs=()
+  services=()
+  udev_rules=()
+  while IFS=$'\t' read -r kind a b; do
+    [[ -n $kind ]] || continue
+    case $kind in
+      device) hardware+=("$a") ;;
+      package)
+        pkg_names+=("$b")
+        if [[ $a == aur ]]; then aur_pkgs+=("$b"); else arch_pkgs+=("$b"); fi
+        ;;
+      service) services+=("$a") ;;
+      udev) udev_rules+=("$a"$'\t'"$b") ;;
+    esac
+  done <<< "$deps_output"
+  if (( ${#arch_pkgs[@]} )); then
+    omargb_muted "Installing ${arch_pkgs[*]}"
+    omarchy-pkg-add "${arch_pkgs[@]}"
+  fi
+  if (( ${#aur_pkgs[@]} )); then
+    omargb_muted "Installing ${aur_pkgs[*]}"
+    omarchy-pkg-aur-add "${aur_pkgs[@]}"
+  fi
+  for rule in "${udev_rules[@]+"${udev_rules[@]}"}"; do
+    src="${OMARCHY_PATH:-/usr/share/omarchy}/${rule%%$'\t'*}"
+    dest="${rule#*$'\t'}"
+    if [[ -f $src && ! -f $dest ]]; then
+      sudo install -m 644 "$src" "$dest"
+    fi
+  done
+  for service in "${services[@]+"${services[@]}"}"; do
+    if ! systemctl is-enabled --quiet "$service" || ! systemctl is-active --quiet "$service"; then
+      sudo systemctl enable --now "$service"
+    fi
+  done
+fi
+
 if (( updating )); then
   summary="• Updated hooks, shims, and units from this checkout."
 else
   summary="• Installed into this session."
 fi
+card_lines=(
+  "$summary"
+  "• The command and device database follow this checkout."
+  "• A theme or palette change runs omargb apply."
+)
+if [[ ${OMARGB_INSTALL_DEPS:-1} == 1 ]]; then
+  if (( ${#hardware[@]} )); then
+    card_lines+=("• Hardware")
+    for name in "${hardware[@]}"; do
+      card_lines+=("  $name")
+    done
+  else
+    card_lines+=("• No supported hardware is connected, so no painter packages were installed.")
+  fi
+  if (( ${#pkg_names[@]} )); then
+    card_lines+=("• Painter packages")
+    for name in "${pkg_names[@]}"; do
+      card_lines+=("  $name")
+    done
+  fi
+fi
 echo
-omargb_card "OmaRGB" "" \
-  "$summary" \
-  "• The command and device database follow this checkout." \
-  "• Theme changes, wallpaper palette updates, and login call omargb apply."
+omargb_card "OmaRGB" "" "${card_lines[@]}"
 echo
 omargb_ok "Done"
 omargb_muted "The shim directory is prepended to PATH at the next graphical login."

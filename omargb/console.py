@@ -57,6 +57,9 @@ def _present_line(line: str, inner: int) -> list[str]:
     named = _openlinkhub_names(line)
     if named is not None:
         return _section("openlinkhub", named, inner)
+    lamps = _homeassistant_names(line)
+    if lamps is not None:
+        return _section("homeassistant", lamps, inner)
     return _wrap(line, inner)
 
 
@@ -108,6 +111,20 @@ def _openrgb_devices(line: str) -> list[str] | None:
     names = []
     for note in body.split(", "):
         match = re.fullmatch(r"(?:\d+:)?(.+) (#[0-9a-fA-F]{6})", note.strip())
+        names.append(match.group(1) if match else note.strip())
+    return names
+
+
+def _homeassistant_names(line: str) -> list[str] | None:
+    if line.startswith("homeassistant dry-run "):
+        body = line.removeprefix("homeassistant dry-run ")
+    elif line.startswith("homeassistant ") and not line.startswith("homeassistant:"):
+        body = line.removeprefix("homeassistant ")
+    else:
+        return None
+    names = []
+    for note in body.split(", "):
+        match = re.fullmatch(r"(.+) (#[0-9a-fA-F]{6})", note.strip())
         names.append(match.group(1) if match else note.strip())
     return names
 

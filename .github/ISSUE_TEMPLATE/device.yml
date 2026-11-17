@@ -35,6 +35,15 @@ body:
         - openlinkhub
         - asus_rog
         - framework16
+        - homeassistant
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Packages this device needs beyond the ones its engine already lists in share/painters.toml. Write none if there are no extras.
+      placeholder: none
     validations:
       required: true
   - type: dropdown
