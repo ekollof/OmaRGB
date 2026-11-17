@@ -1,0 +1,84 @@
+name: Device
+description: Hardware the database does not paint yet
+title: "device: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the open issues first. If this hardware is already there, add the missing details to that issue.
+
+        A device an existing engine can paint only needs a `share/devices.toml` row. Do not paste macro dumps, keyboard maps, or a lighting template binary.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before opening
+      options:
+        - label: I searched the open issues and this device is not already reported
+          required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product name
+      description: The name that belongs in the issue title after `device:`.
+      placeholder: Corsair Vengeance RGB Pro
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      description: Which engine should paint it, if one already speaks the protocol.
+      options:
+        - not sure
+        - vanguard_k08
+        - openrgb
+        - openlinkhub
+        - asus_rog
+        - framework16
+    validations:
+      required: true
+  - type: dropdown
+    id: effect
+    attributes:
+      label: Effect
+      options:
+        - not sure
+        - solid
+        - gradient
+    validations:
+      required: true
+  - type: textarea
+    id: identifiers
+    attributes:
+      label: Identifiers
+      description: The ids the database matches on. Leave out anything that does not apply. A photo can go here too.
+      placeholder: |
+        lsusb line, including the vendor:product id
+
+        lspci -nn line, when the light is on PCI
+
+        When it is a laptop or motherboard backlight, the files in /sys/class/dmi/id:
+        board_vendor, board_name, sys_vendor, product_family, product_name
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: omargb plan
+      description: Paste the command output. This shows whether the database already matches the device.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: openrgb
+    attributes:
+      label: openrgb --list-devices
+      description: Paste this when OpenRGB can see the device.
+      render: text
+  - type: textarea
+    id: colour
+    attributes:
+      label: Colour
+      description: What the theme colour was, and what the hardware actually showed.
+    validations:
+      required: true

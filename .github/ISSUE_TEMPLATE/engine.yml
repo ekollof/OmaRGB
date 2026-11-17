@@ -1,0 +1,66 @@
+name: Engine
+description: A protocol that no current engine speaks
+title: "engine: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the open issues first. An engine is a new protocol. A device that an existing engine can paint is a device issue, not an engine issue.
+
+        Do not paste macro dumps, keyboard maps, or a lighting template binary.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before opening
+      options:
+        - label: I searched the open issues and this protocol is not already reported
+          required: true
+  - type: input
+    id: protocol
+    attributes:
+      label: Protocol
+      description: The name that belongs in the issue title after `engine:`.
+      placeholder: vendor hidraw
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the current engines cannot paint it
+      description: The engines shipped now are vanguard_k08, openrgb, openlinkhub, asus_rog, and framework16.
+    validations:
+      required: true
+  - type: textarea
+    id: identifiers
+    attributes:
+      label: Identifiers
+      description: The ids the database matches on, for the hardware that needs this protocol. A photo can go here too.
+      placeholder: |
+        lsusb line, including the vendor:product id
+
+        lspci -nn line, when the light is on PCI
+
+        When it is a laptop or motherboard backlight, the files in /sys/class/dmi/id:
+        board_vendor, board_name, sys_vendor, product_family, product_name
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: omargb plan
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: openrgb
+    attributes:
+      label: openrgb --list-devices
+      description: Paste this when OpenRGB can see the device.
+      render: text
+  - type: textarea
+    id: colour
+    attributes:
+      label: Colour
+      description: What the theme colour was, and what the hardware actually showed.
+    validations:
+      required: true

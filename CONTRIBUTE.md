@@ -6,7 +6,7 @@ Search the open issues first. If yours is already there, add the missing hardwar
 
 ## 1. Open an issue
 
-Use one of these titles:
+Use the issue form. It asks for the fields below and sets one of these titles:
 
 - `device: <product name>` for hardware the database does not paint yet
 - `engine: <name>` for a protocol that no current engine speaks

@@ -1,0 +1,75 @@
+name: Bug
+description: A match that paints the wrong colour, misses the device, or breaks a key map
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the open issues first. Describe what the lights did.
+
+        Do not paste macro dumps, keyboard maps, or a lighting template binary.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before opening
+      options:
+        - label: I searched the open issues and this is not already reported
+          required: true
+  - type: input
+    id: summary
+    attributes:
+      label: What the lights did
+      description: The short description that belongs in the issue title after `bug:`.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong
+      options:
+        - painted the wrong colour
+        - missed the device
+        - broke a key map
+        - something else
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What the theme colour was, and what the hardware actually showed.
+    validations:
+      required: true
+  - type: textarea
+    id: identifiers
+    attributes:
+      label: Identifiers
+      description: The ids the database matches on. Leave out anything that does not apply.
+      placeholder: |
+        lsusb line, including the vendor:product id
+
+        lspci -nn line, when the light is on PCI
+
+        When it is a laptop or motherboard backlight, the files in /sys/class/dmi/id:
+        board_vendor, board_name, sys_vendor, product_family, product_name
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: omargb plan
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: openrgb
+    attributes:
+      label: openrgb --list-devices
+      description: Paste this when OpenRGB can see the device.
+      render: text
