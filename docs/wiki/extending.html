@@ -17,12 +17,13 @@
       <a href="../">OmaRGB</a>
       <a href="./">Wiki</a>
       <a href="devices.html">Devices</a>
-      <a href="extending.html" class="here" aria-current="page">Extending</a>
+      <a href="engines.html">Engines</a>
+      <a class="here" href="extending.html" aria-current="page">Extending</a>
       <a href="omarchy.html">From Omarchy</a>
       <a href="https://github.com/ekollof/OmaRGB">Source</a>
     </nav>
     <h1>Extending OmaRGB</h1>
-    <p>Work starts as a GitHub issue, described in <a href="https://github.com/ekollof/OmaRGB/blob/master/CONTRIBUTE.md">CONTRIBUTE.md</a>. This page is the shape of the change itself.</p>
+    <p>Work starts as a GitHub issue, described in <a href="https://github.com/ekollof/OmaRGB/blob/master/CONTRIBUTE.md">CONTRIBUTE.md</a>. This page is the shape of the change itself. Setup for the engines that already ship is on <a href="engines.html">Engines</a>.</p>
 
     <h2>An OpenRGB keyboard</h2>
     <p>A keyboard the OpenRGB server reports, with a per-LED mode and more than one LED, is painted with no row. The gradient runs left to right, one colour per column when the device has a matrix, and along the LED list when it does not. Plug it in, leave the OpenRGB server running, and <code>omargb plan</code> should name it.</p>
@@ -68,7 +69,7 @@ effect = "gradient"</code></pre>
     <pre><code>python3 tests/test_omargb.py
 omargb plan</code></pre>
     <p>Run <code>omargb apply</code> only when the lights should change. The keyboard write takes a couple of seconds.</p>
-    <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="omarchy.html">From Omarchy</a></p>
+    <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="engines.html">Engines</a> · <a href="omarchy.html">From Omarchy</a></p>
   </main>
 </body>
 </html>

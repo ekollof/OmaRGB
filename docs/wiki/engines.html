@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Engines · OmaRGB</title>
+  <meta name="description" content="How to set up each OmaRGB painter, including Home Assistant.">
+  <link rel="canonical" href="https://ekollof.github.io/OmaRGB/wiki/engines.html">
+  <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <meta name="theme-color" content="#070707">
+  <link rel="stylesheet" href="../site.css?v=3">
+</head>
+<body class="wiki">
+  <main>
+    <nav class="nav">
+      <a href="../">OmaRGB</a>
+      <a href="./">Wiki</a>
+      <a href="devices.html">Devices</a>
+      <a class="here" href="engines.html" aria-current="page">Engines</a>
+      <a href="extending.html">Extending</a>
+      <a href="omarchy.html">From Omarchy</a>
+      <a href="https://github.com/ekollof/OmaRGB">Source</a>
+    </nav>
+    <h1>Engines</h1>
+    <p><code>install.sh</code> installs a painter's packages only when this machine has a device that uses that engine. The list is <a href="https://github.com/ekollof/OmaRGB/blob/master/share/painters.toml"><code>share/painters.toml</code></a>. An engine with no package there needs nothing from the package manager. <code>omargb plan</code> shows the match and does not paint.</p>
+
+    <h2><code>vanguard_k08</code></h2>
+    <p>The Sound BlasterX Vanguard K08, USB <code>041e:3126</code>. There is no package. The engine opens the keyboard's hidraw node (<code>/dev/input/by-id/*Vanguard*if01-hidraw</code>) and writes only the LED colour bytes, so the key map stays as the keyboard has it. The process has to be allowed to open that node. The gradient runs side to side across the key columns.</p>
+
+    <h2><code>openrgb</code></h2>
+    <p>When a matched device uses this engine, <code>install.sh</code> installs the Arch package <code>openrgb</code>. OmaRGB then talks to the server on <code>127.0.0.1:6742</code>. The package ships <code>openrgb.service</code>, which runs <code>openrgb --server</code>. <code>install.sh</code> does not enable that service. Start it if nothing is already listening:</p>
+    <pre><code>sudo systemctl enable --now openrgb.service</code></pre>
+    <p>A keyboard the server reports, with a per-LED mode and more than one LED, is painted with no database row. The gradient runs left to right, one colour per column when the keyboard has a matrix. A mouse, a memory stick, a motherboard, or a hub needs a row. A device with one LED, or without a per-LED mode, gets one theme colour. If the mode has a brightness range, that brightness is set to its maximum.</p>
+
+    <h2><code>openlinkhub</code></h2>
+    <p>Corsair hubs, in this database the Commander PRO. When that device is present, <code>install.sh</code> installs the AUR package <code>openlinkhub-bin</code> and enables <code>openlinkhub.service</code>. The service listens on <code>127.0.0.1:27003</code>. OmaRGB posts one theme colour to <code>/api/color/all</code>, the same call the web UI uses for every hub device. The <code>openlinkhub</code> binary panics if you run it yourself outside that service. If the service is down, the Commander PRO row falls back to OpenRGB and one Static colour.</p>
+
+    <h2><code>asus_rog</code></h2>
+    <p>An ASUS ROG laptop keyboard, matched the same way as <code>omarchy-hw-asus-rog</code>. <code>install.sh</code> installs <code>asusctl</code>. The paint is one theme colour:</p>
+    <pre><code>asusctl aura effect static -c RRGGBB</code></pre>
+
+    <h2><code>framework16</code></h2>
+    <p>A Framework Laptop 16 keyboard, matched the same way as <code>omarchy-hw-framework16</code>, including USB <code>32ac:0012</code>. <code>install.sh</code> installs <code>qmk-hid</code> and, when the rule is not already there, copies Omarchy's unprivileged hidraw rule to <code>/etc/udev/rules.d/50-framework16-qmk-hid.rules</code>. The paint is one theme colour: effect 1, hue, saturation, brightness 100, and save. Hue and saturation follow <code>colorsys</code>.</p>
+
+    <h2><code>homeassistant</code></h2>
+    <p>There is no package. Lamps come from <code>~/.config/hass.cfg</code>, the same file wallpaperctl uses when that package is installed. OmaRGB does not create the file. It has to be readable only by its owner. A mode such as <code>644</code> is rejected and the lamps stay as they are.</p>
+    <pre><code>install -m 600 /dev/null ~/.config/hass.cfg</code></pre>
+    <pre><code>[auth]
+server = http://127.0.0.1:8123
+token = replace-with-a-long-lived-access-token
+lamp = light.kitchen, light.desk</code></pre>
+    <p><code>server</code> is the Home Assistant base URL, with no path on the end. <code>token</code> is a long-lived access token from your profile in Home Assistant. <code>lamp</code> is a comma-separated list of entity ids. Each id is a domain, a dot, and a name made of letters, digits, and underscores, such as <code>light.kitchen</code>. Anything else in that list is ignored.</p>
+    <p>The database row <code>bus = "hass"</code>, <code>id = "light.*"</code> matches those lamps. A lamp is painted only when it is already on: OmaRGB calls <code>light.turn_on</code> with <code>rgb_color</code>. A lamp that is off stays off. The colour is one theme stop. The bar chooses which stop (warmest, least blue, most saturated, coolest, or brightest). Warmest is the default, so a blue stop does not win. <code>omargb plan</code> lists the lamps and does not call Home Assistant.</p>
+    <p>Do not commit <code>hass.cfg</code> or the token. If <code>omargb apply</code> reports <code>rejected the config (permissions)</code>, run <code>chmod 600 ~/.config/hass.cfg</code>. If it reports <code>config missing</code>, the file, the <code>[auth]</code> section, or one of <code>server</code>, <code>token</code>, and <code>lamp</code> is absent.</p>
+    <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="extending.html">Extending</a> · <a href="omarchy.html">From Omarchy</a></p>
+  </main>
+</body>
+</html>

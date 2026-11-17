@@ -73,7 +73,7 @@ Engines live in `omargb/engines/`. A new engine is a class with `name` and `appl
 - `openrgb` talks to the OpenRGB server on `127.0.0.1:6742`. Every keyboard the server reports, when it has per-key colour, gets the theme stops left to right, one colour per column. Any other listed device with a per-LED mode and more than one LED gets the theme stops across those LEDs, at that mode's full brightness. A one-LED device, or one without a per-LED mode, stays on the single theme colour.
 - `openlinkhub` posts the theme colour to the local OpenLinkHub service (`127.0.0.1:27003`, `/api/color/all`). If that service is down, the Commander Pro entry falls back to OpenRGB.
 - `asus_rog` and `framework16` cover the laptop keyboards Omarchy used to paint itself.
-- `homeassistant` sets a theme colour on Home Assistant lights that are already on. The default is the warmest palette colour, so a blue stop does not win. The bar panel cycles warmest, least blue, most saturated, coolest, and brightest.
+- `homeassistant` sets a theme colour on Home Assistant lights that are already on. The default is the warmest palette colour, so a blue stop does not win. The bar panel cycles warmest, least blue, most saturated, coolest, and brightest. The lamps and the token live in `~/.config/hass.cfg`. Setup for every engine, including that file, is on the [engines](https://ekollof.github.io/OmaRGB/wiki/engines.html) page.
 
 ## Tests
 

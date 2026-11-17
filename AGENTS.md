@@ -20,9 +20,9 @@ OmaRGB paints RGB hardware from the active Omarchy theme. This file is the worki
 | USB, PCI, board, and Home Assistant discovery | `omargb/scan.py` |
 | Install, hooks, login PATH | `install.sh`, `uninstall.sh`, `hooks/`, `shims/`, `systemd/` |
 | Bar icon and painting controls | `shell/`, read by `omargb` from `~/.config/omargb/behaviour.json` |
-| Wiki notes (devices, extending, from Omarchy) | `docs/wiki/` and the GitHub wiki, which is the separate repo `https://github.com/ekollof/OmaRGB.wiki.git` |
+| Wiki notes (devices, engines, extending, from Omarchy) | `docs/wiki/` and the GitHub wiki, which is the separate repo `https://github.com/ekollof/OmaRGB.wiki.git` |
 
-The site pages under `docs/wiki/` and the GitHub wiki (`Home`, `Devices`, `Extending`, `From-Omarchy`, and `_Sidebar`) say the same thing. A change to either is unfinished until the other matches.
+The site pages under `docs/wiki/` and the GitHub wiki (`Home`, `Devices`, `Engines`, `Extending`, `From-Omarchy`, and `_Sidebar`) say the same thing. A change to either is unfinished until the other matches.
 
 Paint a device only when the database matches it. An OpenRGB keyboard with a per-LED mode and more than one LED is the exception: the server reports the type, and no row is required. An unlisted lamp stays dark.
 
