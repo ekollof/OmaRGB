@@ -52,7 +52,7 @@
       <li>The Sound BlasterX Vanguard K08 painter. It replaces a local hook, not a mainline Omarchy command, and it writes only the LED bytes in the keyboard's lighting map.</li>
       <li>OpenLinkHub for the Corsair Commander PRO.</li>
       <li>Home Assistant. Lamps come from <code>~/.config/hass.cfg</code>, the same file wallpaperctl uses.</li>
-      <li>The palette watcher. wallpaperctl rewrites <code>colors.toml</code> without running <code>omarchy theme set</code>. OmaRGB watches that file and <code>keyboard.rgb</code> so the lights still follow.</li>
+      <li>The palette watcher. OmaRGB watches <code>colors.toml</code> and <code>keyboard.rgb</code>, so a later rewrite still recolours the hardware. <a href="https://github.com/ekollof/wallpaperctl">wallpaperctl</a> is a separate package and is not required. It is a recommended way to rebuild that palette from the wallpaper without running <code>omarchy theme set</code>.</li>
     </ul>
     <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="extending.html">Extending</a></p>
   </main>
