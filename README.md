@@ -6,7 +6,7 @@
 
 OmaRGB paints RGB hardware from the active Omarchy theme. Mice, DRAM, motherboard lighting, Corsair hubs, laptop keyboards, and the Sound BlasterX Vanguard K08 are selected from a database of USB, PCI, and board ids, then handed to a matching engine.
 
-The site is [ekollof.github.io/OmaRGB](https://ekollof.github.io/OmaRGB/).
+The site is [ekollof.github.io/OmaRGB](https://ekollof.github.io/OmaRGB/). The [wiki](https://ekollof.github.io/OmaRGB/wiki/) covers supported and tested devices, how to extend OmaRGB, and what it inherits from Omarchy.
 
 After install, Omarchy's RGB commands (`omarchy-theme-set-keyboard`, OpenRGB, ASUS `asusctl`, Framework `qmk_hid`) are shadowed and the theme-set hook runs OmaRGB instead.
 

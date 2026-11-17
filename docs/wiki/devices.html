@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devices · OmaRGB</title>
+  <meta name="description" content="Hardware OmaRGB paints, and the devices that have been tried.">
+  <link rel="canonical" href="https://ekollof.github.io/OmaRGB/wiki/devices.html">
+  <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <meta name="theme-color" content="#070707">
+  <link rel="stylesheet" href="../site.css?v=3">
+</head>
+<body class="wiki">
+  <main>
+    <nav class="nav">
+      <a href="../">OmaRGB</a>
+      <a href="./">Wiki</a>
+      <a class="here" href="devices.html" aria-current="page">Devices</a>
+      <a href="extending.html">Extending</a>
+      <a href="omarchy.html">From Omarchy</a>
+      <a href="https://github.com/ekollof/OmaRGB">Source</a>
+    </nav>
+    <h1>Devices</h1>
+    <p>OmaRGB paints a device when a row in <a href="https://github.com/ekollof/OmaRGB/blob/master/share/devices.toml"><code>share/devices.toml</code></a> matches it. One class does not need a row: an OpenRGB keyboard with a per-LED mode and more than one LED. Anything else the server can see stays dark.</p>
+
+    <h2>Supported</h2>
+    <p>A gradient uses the theme's colour stops. A solid device uses one stop. OpenRGB sets that mode's full brightness when the mode has a brightness range.</p>
+    <table>
+      <thead>
+        <tr><th>Device</th><th>Match</th><th>Engine</th><th>Colour</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>OpenRGB keyboards</td>
+          <td>The server reports the device type keyboard, with a per-LED mode and more than one LED</td>
+          <td><code>openrgb</code></td>
+          <td>Gradient, left to right, one colour per column when the keyboard has a matrix</td>
+        </tr>
+        <tr>
+          <td>Sound BlasterX Vanguard K08</td>
+          <td>USB <code>041e:3126</code></td>
+          <td><code>vanguard_k08</code></td>
+          <td>Gradient, side to side across the key columns</td>
+        </tr>
+        <tr>
+          <td>Razer Basilisk V3</td>
+          <td>USB <code>1532:0099</code>, OpenRGB name contains <code>Basilisk V3</code></td>
+          <td><code>openrgb</code></td>
+          <td>Gradient along the LED list</td>
+        </tr>
+        <tr>
+          <td>Corsair Vengeance RGB Pro</td>
+          <td>OpenRGB name <code>Corsair Vengeance RGB Pro*</code></td>
+          <td><code>openrgb</code></td>
+          <td>Gradient along the LED list</td>
+        </tr>
+        <tr>
+          <td>Corsair Commander PRO</td>
+          <td>USB <code>1b1c:0c10</code></td>
+          <td><code>openlinkhub</code>, then <code>openrgb</code></td>
+          <td>One colour. OpenRGB is the fallback when OpenLinkHub is down</td>
+        </tr>
+        <tr>
+          <td>MSI X470 GAMING PLUS MAX</td>
+          <td>DMI <code>*:X470 GAMING PLUS MAX*</code>, OpenRGB name contains <code>X470 GAMING PLUS MAX</code></td>
+          <td><code>openrgb</code></td>
+          <td>One colour. The board exposes a single LED</td>
+        </tr>
+        <tr>
+          <td>Framework Laptop 16 keyboard</td>
+          <td>USB <code>32ac:0012</code>, or DMI <code>Framework:*Laptop 16*</code></td>
+          <td><code>framework16</code></td>
+          <td>One colour, through <code>qmk_hid</code></td>
+        </tr>
+        <tr>
+          <td>ASUS ROG keyboard</td>
+          <td>DMI <code>ASUSTeK COMPUTER INC.:*ROG*</code></td>
+          <td><code>asus_rog</code></td>
+          <td>One colour, through <code>asusctl aura static</code></td>
+        </tr>
+        <tr>
+          <td>Home Assistant lights</td>
+          <td>A lamp named in <code>~/.config/hass.cfg</code> whose entity id matches <code>light.*</code></td>
+          <td><code>homeassistant</code></td>
+          <td>One colour, and only when the lamp is already on. The default stop is the warmest</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The bar can turn any of these off, or pin a gradient device to one colour. That choice is <code>~/.config/omargb/behaviour.json</code>.</p>
+
+    <h2>Tested</h2>
+    <p>Supported is what the database will match. Tested is what has been painted on one machine. Framework and ASUS are supported by the same checks Omarchy uses, and have not been run here.</p>
+    <table>
+      <thead>
+        <tr><th>Device</th><th>What was seen</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Sound BlasterX Vanguard K08</td>
+          <td>USB <code>041e:3126</code>. The gradient runs side to side. Only the LED bytes in the lighting map are written.</td>
+        </tr>
+        <tr>
+          <td>Razer BlackWidow V3</td>
+          <td>USB <code>1532:024e</code>. OpenRGB reports a keyboard, Direct mode, 132 LEDs, and a 22 by 6 matrix. The gradient runs left to right.</td>
+        </tr>
+        <tr>
+          <td>Logitech G513</td>
+          <td>USB <code>046d:c33c</code>. OpenRGB reports a keyboard, Direct mode, 107 LEDs, and a 21 by 6 matrix. No database row. The gradient runs left to right.</td>
+        </tr>
+        <tr>
+          <td>Razer Basilisk V3</td>
+          <td>USB <code>1532:0099</code>. Direct mode, a logo, a scroll wheel, and a linear strip. The gradient follows that LED list.</td>
+        </tr>
+        <tr>
+          <td>Corsair Vengeance RGB Pro DDR4</td>
+          <td>Four sticks. Each has Direct mode and 10 LEDs. The gradient follows the LED list.</td>
+        </tr>
+        <tr>
+          <td>Corsair Commander PRO</td>
+          <td>USB <code>1b1c:0c10</code>. OpenLinkHub paints one colour. OpenRGB sees the hub with no LED list, so the fallback is Static mode.</td>
+        </tr>
+        <tr>
+          <td>MSI X470 GAMING PLUS MAX</td>
+          <td>One Direct LED. It stays a single theme colour.</td>
+        </tr>
+        <tr>
+          <td>Home Assistant</td>
+          <td>Lamps listed in <code>hass.cfg</code> take one theme colour when they are already on. Lamps that are off are left off.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a href="./">Wiki</a> · <a href="extending.html">Extending</a> · <a href="omarchy.html">From Omarchy</a></p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>From Omarchy · OmaRGB</title>
+  <meta name="description" content="Which Omarchy RGB painters OmaRGB replaces, and what it changes.">
+  <link rel="canonical" href="https://ekollof.github.io/OmaRGB/wiki/omarchy.html">
+  <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <meta name="theme-color" content="#070707">
+  <link rel="stylesheet" href="../site.css?v=3">
+</head>
+<body class="wiki">
+  <main>
+    <nav class="nav">
+      <a href="../">OmaRGB</a>
+      <a href="./">Wiki</a>
+      <a href="devices.html">Devices</a>
+      <a href="extending.html">Extending</a>
+      <a class="here" href="omarchy.html" aria-current="page">From Omarchy</a>
+      <a href="https://github.com/ekollof/OmaRGB">Source</a>
+    </nav>
+    <h1>From Omarchy</h1>
+    <p>OmaRGB does not edit Omarchy. <code>install.sh</code> puts shims first on <code>PATH</code> at the next graphical login, and a theme-set hook paints before that login. The stock commands still exist. They no longer get there first.</p>
+
+    <h2>What the install takes over</h2>
+    <p>These Omarchy commands become no-ops while the shims are first on <code>PATH</code>. The theme hook runs <code>omargb apply</code> instead.</p>
+    <ul>
+      <li><code>omarchy-theme-set-keyboard</code></li>
+      <li><code>omarchy-theme-set-openrgb</code></li>
+      <li><code>omarchy-theme-set-keyboard-asus-rog</code></li>
+      <li><code>omarchy-theme-set-keyboard-f16</code></li>
+    </ul>
+    <p>Until that login, Omarchy may paint first and the theme hook corrects it. <code>uninstall.sh</code> removes the hooks and the shims and puts back anything the installer stepped aside.</p>
+
+    <h2>What is kept</h2>
+    <p>The ASUS and Framework rows use the same machine checks as <code>omarchy-hw-asus-rog</code> and <code>omarchy-hw-framework16</code>.</p>
+    <ul>
+      <li>ASUS is <code>sys_vendor</code> <code>ASUSTeK COMPUTER INC.</code> with <code>ROG</code> in the product family. The paint is still <code>asusctl aura effect static</code>.</li>
+      <li>Framework is a <code>Framework</code> machine with <code>Laptop 16</code> in the product name or family, and the USB id <code>32ac:0012</code> the udev rule allows. The paint is still five <code>qmk_hid via</code> calls: effect 1, hue, saturation, brightness 100, and save. Hue and saturation follow <code>colorsys</code>, which is what Omarchy's QMK helper matches.</li>
+      <li>The Framework udev rule is the one Omarchy ships. <code>install.sh</code> copies it when this machine matches.</li>
+    </ul>
+
+    <h2>What is different</h2>
+    <p>The colour is a stop from <code>colors.toml</code>, after the white floor is removed. It is not the raw <code>keyboard.rgb</code> accent.</p>
+    <p>Omarchy's OpenRGB painter reads that accent, mixes it 40% toward white, and prefers a mode whose name contains "gradient". If the scan fails it falls back to one static broadcast. OmaRGB does not mix toward white and does not broadcast. It talks to the OpenRGB server on <code>127.0.0.1:6742</code>. A per-key keyboard gets the theme stops left to right. Any other device is painted only when a database row names it, in Direct mode when that device can take a colour per LED, otherwise as one colour.</p>
+    <p>Home Assistant lamps use the warmest stop by default. The bar can cycle warmest, least blue, most saturated, coolest, and brightest. A lamp that is off stays off.</p>
+
+    <h2>What is not from Omarchy</h2>
+    <ul>
+      <li>The Sound BlasterX Vanguard K08 painter. It replaces a local hook, not a mainline Omarchy command, and it writes only the LED bytes in the keyboard's lighting map.</li>
+      <li>OpenLinkHub for the Corsair Commander PRO.</li>
+      <li>Home Assistant. Lamps come from <code>~/.config/hass.cfg</code>, the same file wallpaperctl uses.</li>
+      <li>The palette watcher. wallpaperctl rewrites <code>colors.toml</code> without running <code>omarchy theme set</code>. OmaRGB watches that file and <code>keyboard.rgb</code> so the lights still follow.</li>
+    </ul>
+    <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="extending.html">Extending</a></p>
+  </main>
+</body>
+</html>

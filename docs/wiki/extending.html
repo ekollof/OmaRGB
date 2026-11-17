@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Extending · OmaRGB</title>
+  <meta name="description" content="How to add a device or an engine to OmaRGB.">
+  <link rel="canonical" href="https://ekollof.github.io/OmaRGB/wiki/extending.html">
+  <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <meta name="theme-color" content="#070707">
+  <link rel="stylesheet" href="../site.css?v=3">
+</head>
+<body class="wiki">
+  <main>
+    <nav class="nav">
+      <a href="../">OmaRGB</a>
+      <a href="./">Wiki</a>
+      <a href="devices.html">Devices</a>
+      <a href="extending.html" class="here" aria-current="page">Extending</a>
+      <a href="omarchy.html">From Omarchy</a>
+      <a href="https://github.com/ekollof/OmaRGB">Source</a>
+    </nav>
+    <h1>Extending OmaRGB</h1>
+    <p>Work starts as a GitHub issue, described in <a href="https://github.com/ekollof/OmaRGB/blob/master/CONTRIBUTE.md">CONTRIBUTE.md</a>. This page is the shape of the change itself.</p>
+
+    <h2>An OpenRGB keyboard</h2>
+    <p>A keyboard the OpenRGB server reports, with a per-LED mode and more than one LED, is painted with no row. The gradient runs left to right, one colour per column when the device has a matrix, and along the LED list when it does not. Plug it in, leave the OpenRGB server running, and <code>omargb plan</code> should name it.</p>
+    <p>A mouse, a memory stick, a motherboard, or a hub still needs a row. So does a keyboard that should use an engine other than OpenRGB.</p>
+
+    <h2>A database row</h2>
+    <p>Named devices live in <code>share/devices.toml</code>. One block is the whole change when an engine already exists.</p>
+    <pre><code>[[device]]
+bus = "usb"
+id = "1532:0099"
+name = "Razer Basilisk V3"
+engine = "openrgb"
+openrgb = "Basilisk V3"
+effect = "gradient"</code></pre>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>bus</code></td><td><code>usb</code>, <code>pci</code>, <code>dmi</code>, <code>openrgb</code>, or <code>hass</code></td></tr>
+        <tr><td><code>id</code></td><td><code>vendor:product</code> in lowercase hex, a DMI <code>vendor:name</code>, an OpenRGB name, or a Home Assistant entity id. Shell wildcards are allowed on DMI, OpenRGB, and Home Assistant ids</td></tr>
+        <tr><td><code>engine</code></td><td><code>vanguard_k08</code>, <code>openrgb</code>, <code>openlinkhub</code>, <code>asus_rog</code>, <code>framework16</code>, or <code>homeassistant</code></td></tr>
+        <tr><td><code>effect</code></td><td><code>solid</code> for one stop, <code>gradient</code> for the theme stops. OpenRGB only spreads a gradient when the live device has a per-LED mode and more than one LED</td></tr>
+        <tr><td><code>openrgb</code></td><td>Name substring, when that engine has to find the device inside OpenRGB</td></tr>
+        <tr><td><code>fallback</code></td><td>Engine used when the first one reports it cannot run</td></tr>
+      </tbody>
+    </table>
+    <p>USB and PCI ids come from <code>lsusb</code> and <code>lspci -nn</code>. A board with no USB lighting id is matched on <code>board_vendor:board_name</code>, <code>sys_vendor:product_family</code>, or <code>sys_vendor:product_name</code> from <code>/sys/class/dmi/id</code>. DMI matching is case-insensitive.</p>
+    <p>A new match rule gets a case in <code>tests/test_omargb.py</code>. <code>omargb plan</code> must show the device and must not write to hardware.</p>
+
+    <h2>A new engine</h2>
+    <p>An engine is a class with <code>name</code> and <code>apply(theme, targets, dry_run)</code>. It lives in <code>omargb/engines/</code> and is registered in <code>omargb/engines/__init__.py</code>. <code>dry_run</code> must not open the device. <code>plan</code> is a dry run.</p>
+    <p>Return a short status line. If the line contains <code>unavailable</code>, <code>rejected</code>, <code>missing</code>, <code>failed</code>, or <code>not ready</code>, <code>omargb apply</code> tries the row's <code>fallback</code>. <code>not ready</code> is also how a missing daemon asks the caller to wait.</p>
+    <p>Packages, a system service, or a udev rule go in <code>share/painters.toml</code>. <code>install.sh</code> installs them only when this machine has a device that uses the engine. <code>source</code> is <code>arch</code> or <code>aur</code>. An engine with no packages gets no block.</p>
+    <p>Python is 3.11 or newer, standard library only. Do not edit <code>/usr/share/omarchy</code> or open an Omarchy pull request for the device.</p>
+
+    <h2>Colours</h2>
+    <p>Colours come from <code>~/.local/state/omarchy/current/theme/colors.toml</code>. <code>keyboard.rgb</code> is used only when that file has no <code>color0</code> through <code>color15</code>. Do not sample the wallpaper, and do not invent a hue that is not in the theme file.</p>
+    <p><code>color0</code>, <code>color7</code>, <code>color8</code>, and <code>color15</code> are left out, and so is any slot whose strongest channel is less than 24 above its weakest. What remains has its white floor removed, and the strongest remaining channel is scaled to 255, so a pastel that looks coloured on a dark terminal does not come out as white light.</p>
+    <p>Do not mix a colour toward white. Gradient devices receive the theme stops. Other devices receive the most saturated stop. Home Assistant is the exception: the bar cycles warmest, least blue, most saturated, coolest, and brightest, and the default is warmest, so a blue stop does not win on a lamp.</p>
+
+    <h2>Checks</h2>
+    <pre><code>python3 tests/test_omargb.py
+omargb plan</code></pre>
+    <p>Run <code>omargb apply</code> only when the lights should change. The keyboard write takes a couple of seconds.</p>
+    <p><a href="./">Wiki</a> · <a href="devices.html">Devices</a> · <a href="omarchy.html">From Omarchy</a></p>
+  </main>
+</body>
+</html>

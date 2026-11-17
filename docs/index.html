@@ -28,27 +28,44 @@
   <meta name="twitter:image" content="https://ekollof.github.io/OmaRGB/card.jpg">
   <meta name="twitter:image:alt" content="OmaRGB logo beside the line: Paint RGB hardware from the Omarchy theme.">
 
-  <link rel="stylesheet" href="site.css?v=2">
+  <link rel="stylesheet" href="site.css?v=3">
 </head>
-<body>
+<body class="home">
   <main>
+    <nav class="nav">
+      <a class="here" href="./" aria-current="page">OmaRGB</a>
+      <a href="wiki/">Wiki</a>
+      <a href="https://github.com/ekollof/OmaRGB">Source</a>
+    </nav>
     <img class="mark" src="apple-touch-icon.png" alt="OmaRGB" width="160" height="160">
     <h1>OmaRGB</h1>
-    <p>Paints RGB hardware from the active Omarchy theme. Mice, DRAM, motherboard lighting, Corsair hubs, laptop keyboards, and the Sound BlasterX Vanguard K08 are selected from a database, then painted by a matching engine.</p>
-    <p>Colours come from the active theme. Gradient devices use the theme's colour stops. One-colour devices use a single stop.</p>
-    <p>The bar icon opens the painting controls: follow the theme or leave the lights as they are, per device, and a solid colour or the theme gradient on the Vanguard K08.</p>
+    <p>Paints RGB hardware from the active Omarchy theme. Keyboards, mice, memory, motherboard lights, a Corsair hub, laptop keyboards, and Home Assistant lamps each get a colour the theme already contains.</p>
+
+    <h2>Install</h2>
+    <pre><code>git clone https://github.com/ekollof/OmaRGB.git
+cd OmaRGB
+./install.sh</code></pre>
+    <p>The installer links <code>omargb</code> onto <code>PATH</code>, hooks theme changes, and steps in front of Omarchy's own RGB commands. <code>omargb plan</code> shows the match and changes nothing. <code>omargb apply</code> paints.</p>
+
+    <h2>On the bar</h2>
+    <p>The lightbulb opens the same choices: follow the theme or leave a device alone, and a solid colour or the theme gradient where the hardware can show one.</p>
     <figure>
       <img class="shot" src="bar.png" width="350" height="34" alt="The OmaRGB lightbulb in the Omarchy bar" style="width: min(100%, 350px); height: auto; aspect-ratio: 350 / 34;">
     </figure>
     <figure>
-      <img class="shot" src="panel.png" width="360" height="554" alt="The OmaRGB panel: follow the theme, a gradient row inside the Vanguard K08 card, and a scrollbar for the rest" style="width: min(100%, 360px); height: auto; aspect-ratio: 360 / 554;">
+      <img class="shot" src="panel.png" width="360" height="554" alt="The OmaRGB panel: follow the theme, per-device cards, and a gradient control" style="width: min(100%, 360px); height: auto; aspect-ratio: 360 / 554;">
     </figure>
-    <pre><code>git clone https://github.com/ekollof/OmaRGB.git
-cd OmaRGB
-./install.sh</code></pre>
+
+    <h2>Wiki</h2>
+    <ul>
+      <li><a href="wiki/devices.html">Devices</a>. What the database paints, which OpenRGB keyboards need no row, and what has actually been tried.</li>
+      <li><a href="wiki/extending.html">Extending</a>. Add a device, or add an engine, without inventing a colour.</li>
+      <li><a href="wiki/omarchy.html">From Omarchy</a>. The painters OmaRGB takes over, and the parts it does on purpose differently.</li>
+    </ul>
     <p class="links">
       <a href="https://github.com/ekollof/OmaRGB">Source</a>
       <a href="https://github.com/ekollof/OmaRGB/blob/master/CONTRIBUTE.md">Contribute</a>
+      <a href="wiki/">Wiki</a>
     </p>
   </main>
 </body>
