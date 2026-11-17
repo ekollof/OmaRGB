@@ -3,6 +3,7 @@
 
 import json
 import os
+import struct
 import subprocess
 import sys
 import tempfile
@@ -19,6 +20,18 @@ from omargb.console import present_lines, status_mark
 from omargb.catalog import Entry, Target, load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
 from omargb.engines.homeassistant import HomeAssistant
+from omargb.engines.openrgb import (
+    Controller,
+    Link,
+    Mode,
+    OpenRgb,
+    greet,
+    list_devices,
+    pack_leds,
+    pack_update_mode,
+    parse_controller,
+    _colours,
+)
 from omargb.scan import Hardware, scan
 from omargb.theme import Theme, load_theme, parse_rgb, to_led
 
@@ -395,8 +408,9 @@ class CatalogTest(unittest.TestCase):
             (1, "Corsair Vengeance RGB Pro DDR4"),
             (4, "Corsair Commander Pro"),
             (5, "Razer Basilisk V3"),
-            (6, "MSI X470 GAMING PLUS MAX (MS-7B79)"),
-            (7, "Some Other Lamp"),
+            (6, "G513 RGB MECHANICAL GAMING KEYBOARD", 107),
+            (7, "MSI X470 GAMING PLUS MAX (MS-7B79)"),
+            (8, "Some Other Lamp"),
         ]
         targets = match(self.entries, hardware, openrgb)
         engines = {target.entry.engine for target in targets}
@@ -407,9 +421,36 @@ class CatalogTest(unittest.TestCase):
         self.assertNotIn("Unlisted", names)
         painted = [name for target in targets for _index, name in target.openrgb_devices]
         self.assertIn("Razer Basilisk V3", painted)
+        self.assertNotIn("G513 RGB MECHANICAL GAMING KEYBOARD", painted)
         self.assertIn("Corsair Commander Pro", painted)
         self.assertEqual(painted.count("Corsair Vengeance RGB Pro DDR4"), 2)
         self.assertNotIn("Some Other Lamp", painted)
+
+    def test_an_openrgb_keyboard_needs_no_database_row(self):
+        openrgb = [
+            (0, "Corsair Vengeance RGB Pro DDR4", 10, False),
+            (1, "Some Mouse", 11, False),
+            (2, "G513 RGB MECHANICAL GAMING KEYBOARD", 107, True),
+            (3, "Tiny Keyboard", 1, True),
+            (5, "Razer Basilisk V3", 11, False),
+        ]
+        targets = match(self.entries, [], openrgb)
+        names = [target.entry.name for target in targets]
+        self.assertIn("G513 RGB MECHANICAL GAMING KEYBOARD", names)
+        self.assertNotIn("Some Mouse", names)
+        self.assertNotIn("Tiny Keyboard", names)
+        self.assertNotIn("Razer Basilisk V3", names)
+        keyboard = next(target for target in targets if target.entry.name.startswith("G513"))
+        self.assertEqual(keyboard.entry.effect, "gradient")
+        self.assertEqual(keyboard.openrgb_leds, ((2, 107),))
+        self.assertEqual(keyboard.entry.bus, "openrgb")
+
+    def test_a_database_row_claims_a_keyboard_before_the_generic_match(self):
+        entries = [Entry("usb", "1532:0099", "Mouse", "openrgb", "solid", "Basilisk", "")]
+        openrgb = [(5, "Razer Basilisk V3", 11, True)]
+        targets = match(entries, [Hardware("usb", "1532:0099", "Mouse")], openrgb)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(targets[0].entry.effect, "solid")
 
     def test_rog_matches_product_family_not_board_name(self):
         hardware = [
@@ -790,6 +831,222 @@ class HassTest(unittest.TestCase):
                 text = HomeAssistant().apply(theme, targets, dry_run=False)
         self.assertIn("rejected", text or "")
         self.assertNotIn("test-token", text or "")
+
+
+def _orgb_string(text: str) -> bytes:
+    raw = text.encode() + b"\x00"
+    return struct.pack("<H", len(raw)) + raw
+
+
+def _orgb_device(name: str, leds: int, flags: int, bright_max: int, matrix: tuple[int, ...] | None = None) -> bytes:
+    """A protocol-4 controller blob with one mode, a matrix zone, and a segment.
+
+    `matrix` is the row-major LED indexes. The width is half the length when the
+    length is even, otherwise one row. An empty matrix means the zone has none.
+    """
+    body = struct.pack("<i", 5)
+    for text in (name, "Razer", "keyboard", "1", "", "hid"):
+        body += _orgb_string(text)
+    body += struct.pack("<Hi", 1, 0)
+    body += _orgb_string("Direct")
+    body += struct.pack("<i11IH", 0, flags, 0, 0, 0, bright_max, 0, 0, 0, 0, 0, 1, 0)
+    body += struct.pack("<H", 1)
+    body += _orgb_string("Keyboard")
+    body += struct.pack("<iIII", 2, 1, leds, leds)
+    if matrix is None:
+        matrix = (0,)
+    if matrix:
+        width = max(len(matrix) // 2, 1)
+        height = len(matrix) // width
+        body += struct.pack("<HII", len(matrix), height, width)
+        body += struct.pack("<" + "I" * len(matrix), *matrix)
+    else:
+        body += struct.pack("<H", 0)
+    body += struct.pack("<H", 1)
+    body += _orgb_string("Main")
+    body += struct.pack("<iII", 1, 0, leds)
+    body += struct.pack("<H", leds)
+    for index in range(leds):
+        body += _orgb_string(f"LED {index}") + struct.pack("<I", index)
+    body += struct.pack("<H", 0)
+    return struct.pack("<I", 4 + len(body)) + body
+
+
+def _orgb_packet(dev: int, pkt: int, payload: bytes) -> bytes:
+    return struct.pack("<4sIII", b"ORGB", dev, pkt, len(payload)) + payload
+
+
+class _Buf:
+    def __init__(self, incoming: bytes = b""):
+        self.incoming = incoming
+        self.at = 0
+        self.sent = bytearray()
+        self.closed = False
+
+    def sendall(self, data: bytes) -> None:
+        self.sent += data
+
+    def recv(self, size: int) -> bytes:
+        chunk = self.incoming[self.at:self.at + size]
+        if not chunk:
+            raise ConnectionError("closed")
+        self.at += len(chunk)
+        return chunk
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class OpenRgbTest(unittest.TestCase):
+    def _theme(self) -> Theme:
+        return Theme(Path("colors.toml"), ((255, 0, 255), (255, 0, 0)), (255, 0, 255))
+
+    def _target(self, leds: int, effect: str = "gradient") -> Target:
+        entry = Entry("usb", "1532:024e", "Razer BlackWidow V3", "openrgb", effect, "Blackwidow V3", "")
+        counted = ((5, leds),) if leds > 1 else ()
+        return Target(entry, Hardware("usb", "1532:024e", "Razer BlackWidow V3"), ((5, "Razer Blackwidow V3"),), counted)
+
+    def test_description_keeps_a_matrix_zone_and_the_led_count(self):
+        controller = parse_controller(_orgb_device("Razer Blackwidow V3", 2, 0x30, 255), 5)
+        self.assertEqual(controller.name, "Razer Blackwidow V3")
+        self.assertEqual(controller.leds, 2)
+        self.assertEqual(controller.gradient_count, 2)
+        mode = controller.per_led_mode
+        self.assertIsNotNone(mode)
+        self.assertEqual(mode.name, "Direct")
+        self.assertEqual(mode.flags, 0x30)
+        self.assertEqual(mode.brightness_max, 255)
+        self.assertEqual(parse_controller(_orgb_device("Board", 1, 0x20, 0), 7).gradient_count, 0)
+
+    def test_packets_set_full_brightness_and_padded_colours(self):
+        mode = parse_controller(_orgb_device("Razer Blackwidow V3", 2, 0x30, 255), 5).per_led_mode
+        packet = pack_update_mode(mode, mode.brightness_max)
+        size, mode_index = struct.unpack_from("<Ii", packet)
+        self.assertEqual(size, len(packet))
+        self.assertEqual(mode_index, 0)
+        name_len = struct.unpack_from("<H", packet, 8)[0]
+        fields = struct.unpack_from("<i11IH", packet, 10 + name_len)
+        self.assertEqual(fields[9], 255)
+        self.assertEqual(pack_leds([(1, 2, 3), (4, 5, 6)]), struct.pack("<IHBBBxBBBx", 14, 2, 1, 2, 3, 4, 5, 6))
+
+    def test_list_uses_the_server_and_retries_a_missed_wakeup(self):
+        blob = _orgb_device("Razer Blackwidow V3", 132, 0x30, 255)
+        incoming = _orgb_packet(0, 0, struct.pack("<I", 1)) + _orgb_packet(5, 1, blob)
+        calls = {"n": 0}
+
+        def opener():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise TimeoutError("wakeup")
+            return Link(_Buf(incoming))
+
+        found = list_devices(opener)
+        self.assertEqual(found, [(5, "Razer Blackwidow V3", 132, True)])
+        self.assertEqual(calls["n"], 2)
+
+        def refuse():
+            raise ConnectionRefusedError()
+
+        self.assertEqual(list_devices(refuse), [])
+
+    def test_a_short_description_does_not_raise(self):
+        incoming = _orgb_packet(0, 0, struct.pack("<I", 1)) + _orgb_packet(0, 1, b"\x04\x00\x00\x00")
+        self.assertEqual(list_devices(lambda: Link(_Buf(incoming))), [])
+
+    def test_dry_run_does_not_open_the_server(self):
+        def explode(*_args, **_kwargs):
+            raise AssertionError("dry-run opened the server")
+
+        with patch("omargb.engines.openrgb.session", explode):
+            text = OpenRgb().apply(self._theme(), [self._target(132)], dry_run=True)
+        self.assertEqual(text, "openrgb dry-run 5:Razer Blackwidow V3 gradient")
+
+    def test_apply_spreads_stops_across_the_live_led_count(self):
+        controller = parse_controller(_orgb_device("Razer Blackwidow V3", 3, 0x30, 255), 5)
+        recorded: list[tuple[int, list[tuple[int, int, int]]]] = []
+
+        class Recorder:
+            def paint(self, device, colours):
+                recorded.append((device.index, colours))
+
+            def close(self):
+                pass
+
+        with patch("omargb.engines.openrgb.session", return_value=(Recorder(), [controller])):
+            text = OpenRgb().apply(self._theme(), [self._target(3)], dry_run=False)
+        self.assertEqual(text, "openrgb 5:Razer Blackwidow V3 gradient")
+        self.assertEqual(recorded[0][0], 5)
+        self.assertEqual(recorded[0][1], [(255, 0, 255), (255, 0, 128), (255, 0, 0)])
+
+    def test_a_keyboard_gradient_runs_left_to_right(self):
+        # LED list order is row by row, which paints top to bottom.
+        # The matrix puts 0 and 2 in the left column and 1 and 3 in the right.
+        blob = _orgb_device("Razer Blackwidow V3", 4, 0x30, 255, matrix=(0, 1, 2, 3))
+        controller = parse_controller(blob, 5)
+        self.assertEqual(controller.places, ((0, 0), (1, 0), (0, 1), (1, 1)))
+        self.assertEqual(
+            _colours(self._theme(), "gradient", controller),
+            [(255, 0, 255), (255, 0, 0), (255, 0, 255), (255, 0, 0)],
+        )
+
+    def test_a_mode_without_brightness_uses_custom_mode(self):
+        mode = Mode(0, "Direct", 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ())
+        sock = _Buf()
+        Link(sock).paint(Controller(1, "DRAM", 2, (mode,)), [(8, 0, 0), (0, 8, 0)])
+        ids = []
+        offset = 0
+        while offset + 16 <= len(sock.sent):
+            _magic, _dev, pkt, size = struct.unpack_from("<4sIII", sock.sent, offset)
+            ids.append(pkt)
+            offset += 16 + size
+        self.assertEqual(ids, [1100, 1050])
+
+    def test_a_controller_with_no_leds_uses_its_static_mode(self):
+        mode = Mode(5, "Static", 0, 0x250, 0, 0, 0, 100, 1, 1, 0, 0, 0, 2, ((0, 0, 0),))
+        controller = Controller(4, "Corsair Commander Pro", 0, (mode,))
+        sock = _Buf()
+        self.assertTrue(Link(sock).paint_static(controller, (1, 2, 3)))
+        _magic, dev, pkt, size = struct.unpack_from("<4sIII", sock.sent)
+        self.assertEqual((dev, pkt), (4, 1101))
+        body = sock.sent[16:16 + size]
+        self.assertIn(struct.pack("<BBBx", 1, 2, 3), body)
+        name_len = struct.unpack_from("<H", body, 8)[0]
+        self.assertEqual(struct.unpack_from("<i11IH", body, 10 + name_len)[9], 100)
+
+        entry = Entry("usb", "1b1c:0c10", "Corsair Commander PRO", "openrgb", "solid", "Commander Pro", "")
+        target = Target(entry, Hardware("usb", "1b1c:0c10", "Commander"), ((4, "Corsair Commander Pro"),))
+
+        class Recorder:
+            def __init__(self):
+                self.static = []
+
+            def paint(self, *_args):
+                raise AssertionError("a controller with no LEDs took per-LED colours")
+
+            def paint_static(self, device, colour):
+                self.static.append((device.index, colour))
+                return True
+
+            def close(self):
+                pass
+
+        recorder = Recorder()
+        with patch("omargb.engines.openrgb.session", return_value=(recorder, [controller])):
+            text = OpenRgb().apply(self._theme(), [target], dry_run=False)
+        self.assertEqual(text, "openrgb 4:Corsair Commander Pro #ff00ff")
+        self.assertEqual(recorder.static, [(4, (255, 0, 255))])
+
+    def test_server_down_is_not_ready(self):
+        with patch("omargb.engines.openrgb.session", return_value=None):
+            text = OpenRgb().apply(self._theme(), [self._target(2)], dry_run=False)
+        self.assertEqual(text, "openrgb: not ready")
+
+    def test_greet_asks_for_protocol_4(self):
+        sock = _Buf(_orgb_packet(0, 40, struct.pack("<I", 6)))
+        greet(Link(sock))
+        self.assertIn(struct.pack("<I", 4), bytes(sock.sent))
+        self.assertIn(b"omargb\x00", bytes(sock.sent))
+        self.assertTrue(sock.sent.startswith(b"ORGB"))
 
 
 if __name__ == "__main__":

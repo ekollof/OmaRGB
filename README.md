@@ -31,7 +31,7 @@ omargb plan     # show the match and the colours, change nothing
 omargb apply    # paint matched hardware
 ```
 
-The bar icon opens the same controls: follow the theme or leave the lights as they are, per device, and a solid colour or the theme gradient on the Vanguard K08. The choice is `~/.config/omargb/behaviour.json`. `omargb plan --json` prints it with the matched devices.
+The bar icon opens the same controls: follow the theme or leave the lights as they are, per device, and a solid colour or the theme gradient on the Vanguard K08 and on OpenRGB devices that can colour each LED. The choice is `~/.config/omargb/behaviour.json`. `omargb plan --json` prints it with the matched devices.
 
 <p>
   <img src="assets/bar.png" alt="The OmaRGB lightbulb in the Omarchy bar" width="350">
@@ -57,14 +57,14 @@ New devices and engines start as a GitHub issue. The steps are in [CONTRIBUTE.md
 | `openrgb` | Name substring, when that engine has to find the device inside OpenRGB |
 | `fallback` | Engine used when the first one cannot run |
 
-USB and PCI ids come from `lsusb` and `lspci -nn`. A board that has no USB lighting id is matched on `board_vendor:board_name`, `sys_vendor:product_family`, or `sys_vendor:product_name` from `/sys/class/dmi/id`. The ASUS ROG and Framework Laptop 16 rows use the same DMI checks as Omarchy's `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. DRAM that only OpenRGB can see uses `bus = "openrgb"`. Home Assistant lamps come from `~/.config/hass.cfg` (`[auth]` with `server`, `token`, and a comma-separated `lamp` list). The file must be readable only by its owner. A lamp is painted when that list names it and a `hass` row matches the entity id. Anything not listed is left alone.
+USB and PCI ids come from `lsusb` and `lspci -nn`. A board that has no USB lighting id is matched on `board_vendor:board_name`, `sys_vendor:product_family`, or `sys_vendor:product_name` from `/sys/class/dmi/id`. The ASUS ROG and Framework Laptop 16 rows use the same DMI checks as Omarchy's `omarchy-hw-asus-rog` and `omarchy-hw-framework16`. DRAM that only OpenRGB can see uses `bus = "openrgb"`. An OpenRGB keyboard with per-key colour is painted without a row: the server reports it as a keyboard, and the gradient runs left to right. Home Assistant lamps come from `~/.config/hass.cfg` (`[auth]` with `server`, `token`, and a comma-separated `lamp` list). The file must be readable only by its owner. A lamp is painted when that list names it and a `hass` row matches the entity id. Anything else not listed is left alone.
 
 Engines live in `omargb/engines/`. A new engine is a class with `name` and `apply(theme, targets, dry_run)`, registered in `omargb/engines/__init__.py`.
 
 ## Engines shipped here
 
 - `vanguard_k08` speaks the K08 hidraw protocol and changes only LED colours, so the key map is left as the keyboard has it.
-- `openrgb` sets static mode at full brightness to the theme colour.
+- `openrgb` talks to the OpenRGB server on `127.0.0.1:6742`. Every keyboard the server reports, when it has per-key colour, gets the theme stops left to right, one colour per column. Any other listed device with a per-LED mode and more than one LED gets the theme stops across those LEDs, at that mode's full brightness. A one-LED device, or one without a per-LED mode, stays on the single theme colour.
 - `openlinkhub` posts the theme colour to the local OpenLinkHub service (`127.0.0.1:27003`, `/api/color/all`). If that service is down, the Commander Pro entry falls back to OpenRGB.
 - `asus_rog` and `framework16` cover the laptop keyboards Omarchy used to paint itself.
 - `homeassistant` sets a theme colour on Home Assistant lights that are already on. The default is the warmest palette colour, so a blue stop does not win. The bar panel cycles warmest, least blue, most saturated, coolest, and brightest.

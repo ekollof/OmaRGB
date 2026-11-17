@@ -34,7 +34,10 @@ def fingerprint(theme: Theme, targets: list[Target], strategy: str = "warmest") 
     rows = []
     for target in targets:
         entry = target.entry
-        devices = " ".join(f"{index}:{name}" for index, name in target.openrgb_devices)
+        led_counts = dict(target.openrgb_leds)
+        devices = " ".join(
+            f"{index}:{name}:{led_counts.get(index, 0)}" for index, name in target.openrgb_devices
+        )
         rows.append("|".join((
             entry.engine,
             entry.effect,

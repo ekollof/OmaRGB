@@ -12,7 +12,7 @@ import os
 import time
 
 from omargb.catalog import Target
-from omargb.theme import Theme
+from omargb.theme import Theme, spread
 
 CHUNK = 2048
 ENTRY = 0x09
@@ -51,7 +51,7 @@ class VanguardK08:
         try:
             block = read_map(fd, fcntl)
             ordered = [led for zone in ZONES for led in zone]
-            for led, colour in zip(ordered, gradient(stops, len(ordered))):
+            for led, colour in zip(ordered, spread(stops, len(ordered))):
                 paint(block, led, colour)
             write_map(fd, fcntl, block)
         finally:
@@ -62,19 +62,6 @@ class VanguardK08:
 def find_hidraw() -> str | None:
     paths = sorted(glob.glob("/dev/input/by-id/*Vanguard*if01-hidraw"))
     return paths[0] if paths else None
-
-
-def gradient(stops: list[tuple[int, int, int]], count: int) -> list[tuple[int, int, int]]:
-    if len(stops) < 2:
-        return [stops[0]] * count
-    result = []
-    for index in range(count):
-        position = index / (count - 1) * (len(stops) - 1)
-        stop = min(int(position), len(stops) - 2)
-        fraction = position - stop
-        left, right = stops[stop], stops[stop + 1]
-        result.append(tuple(round(left[channel] + (right[channel] - left[channel]) * fraction) for channel in range(3)))
-    return result
 
 
 def paint(block: bytearray, led: int, colour: tuple[int, int, int]) -> None:

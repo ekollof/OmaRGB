@@ -110,7 +110,7 @@ def _openrgb_devices(line: str) -> list[str] | None:
         return None
     names = []
     for note in body.split(", "):
-        match = re.fullmatch(r"(?:\d+:)?(.+) (#[0-9a-fA-F]{6})", note.strip())
+        match = re.fullmatch(r"(?:\d+:)?(.+?)(?: gradient)?(?: (#[0-9a-fA-F]{6}))?", note.strip())
         names.append(match.group(1) if match else note.strip())
     return names
 

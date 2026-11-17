@@ -167,6 +167,24 @@ def _read_colors(text: str) -> tuple[list[tuple[int, str]], list[str]]:
     return slots, named
 
 
+def spread(stops: list[tuple[int, int, int]], count: int) -> list[tuple[int, int, int]]:
+    """Place the theme stops across `count` LEDs."""
+    if count <= 0:
+        return []
+    if len(stops) < 2:
+        return [stops[0]] * count
+    result = []
+    for index in range(count):
+        position = index / (count - 1) * (len(stops) - 1)
+        stop = min(int(position), len(stops) - 2)
+        fraction = position - stop
+        left, right = stops[stop], stops[stop + 1]
+        result.append(tuple(
+            round(left[channel] + (right[channel] - left[channel]) * fraction) for channel in range(3)
+        ))
+    return result
+
+
 def _spread(items: list, count: int) -> list:
     if len(items) <= count:
         return items

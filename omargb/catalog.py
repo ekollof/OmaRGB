@@ -27,6 +27,8 @@ class Target:
     entry: Entry
     hardware: Hardware
     openrgb_devices: tuple[tuple[int, str], ...] = ()
+    # OpenRGB index and LED count for devices that can take one colour per LED.
+    openrgb_leds: tuple[tuple[int, int], ...] = ()
 
 
 def load_database(path: Path | None = None) -> list[Entry]:
@@ -51,10 +53,12 @@ def load_database(path: Path | None = None) -> list[Entry]:
 def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[tuple[int, str]] | None = None) -> list[Target]:
     """Pair database rows with hardware.
 
-    openrgb_devices is the indexed list from `openrgb --list-devices`. A row
-    with bus "openrgb" matches those names. Other rows match USB, PCI, or DMI,
-    and take the OpenRGB indices whose names contain `openrgb` when that engine
-    needs them.
+    openrgb_devices is the indexed list from the OpenRGB server. A row with
+    bus "openrgb" matches those names. Other rows match USB, PCI, or DMI, and
+    take the OpenRGB indices whose names contain `openrgb` when that engine
+    needs them. A third field, when present, is the per-LED count. A fourth
+    field marks an OpenRGB keyboard. Any keyboard with more than one LED that
+    no row claimed is painted too, so a new keyboard does not need its own row.
     """
     openrgb_devices = openrgb_devices or []
     claimed: set[int] = set()
@@ -66,8 +70,8 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
             hits = _unclaimed(openrgb_devices, claimed, lambda name: fnmatch.fnmatchcase(name, entry.ident))
             if not hits:
                 continue
-            claimed.update(index for index, _name in hits)
-            targets.append(Target(entry, Hardware("openrgb", entry.ident, entry.name), tuple(hits)))
+            claimed.update(index for index, _name, _leds in hits)
+            targets.append(Target(entry, Hardware("openrgb", entry.ident, entry.name), _names(hits), _leds(hits)))
             continue
 
         if entry.bus == "hass":
@@ -80,14 +84,17 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
         if device is None:
             continue
         indices: tuple[tuple[int, str], ...] = ()
+        leds: tuple[tuple[int, int], ...] = ()
         if entry.openrgb and (entry.engine == "openrgb" or entry.fallback == "openrgb"):
             needle = entry.openrgb.lower()
             hits = _unclaimed(openrgb_devices, claimed, lambda name, needle=needle: needle in name.lower())
             if entry.engine == "openrgb" and not hits:
                 continue
-            claimed.update(index for index, _name in hits)
-            indices = tuple(hits)
-        targets.append(Target(entry, device, indices))
+            claimed.update(index for index, _name, _count in hits)
+            indices = _names(hits)
+            leds = _leds(hits)
+        targets.append(Target(entry, device, indices, leds))
+    targets.extend(_openrgb_keyboards(openrgb_devices, claimed))
     return targets
 
 
@@ -100,9 +107,34 @@ def _ident_matches(entry: Entry, item: Hardware) -> bool:
     return fnmatch.fnmatchcase(item.ident, entry.ident)
 
 
+def _openrgb_keyboards(devices, claimed: set[int]) -> list[Target]:
+    """Keyboards the server reported, other than ones a database row already claimed."""
+    found = []
+    for device in devices:
+        index, name, *rest = device
+        leds = int(rest[0]) if rest else 0
+        keyboard = bool(rest[1]) if len(rest) > 1 else False
+        if index in claimed or not keyboard or leds < 2 or not name:
+            continue
+        claimed.add(index)
+        entry = Entry("openrgb", name, name, "openrgb", "gradient", "", "")
+        found.append(Target(entry, Hardware("openrgb", name, name), ((index, name),), ((index, leds),)))
+    return found
+
+
 def _unclaimed(devices, claimed, predicate):
-    return [
-        (index, name)
-        for index, name in devices
-        if index not in claimed and predicate(name)
-    ]
+    found = []
+    for device in devices:
+        index, name, *rest = device
+        leds = int(rest[0]) if rest else 0
+        if index not in claimed and predicate(name):
+            found.append((int(index), name, leds))
+    return found
+
+
+def _names(hits) -> tuple[tuple[int, str], ...]:
+    return tuple((index, name) for index, name, _leds in hits)
+
+
+def _leds(hits) -> tuple[tuple[int, int], ...]:
+    return tuple((index, count) for index, _name, count in hits if count > 1)

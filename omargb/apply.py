@@ -96,10 +96,9 @@ def prepare(
         return Report(["behaviour rejected the config"])
     entries = load_database(database)
     hardware = scan(root)
-    needs_openrgb = any(
-        entry.bus == "openrgb" or "openrgb" in (entry.engine, entry.fallback) for entry in entries
-    )
-    if openrgb_devices is None and needs_openrgb:
+    # Keyboards come from the server itself, so the list is needed even when
+    # no database row names OpenRGB.
+    if openrgb_devices is None:
         openrgb_devices = list_devices()
     targets = match(entries, hardware, openrgb_devices or [])
     return theme, targets, policy
@@ -140,7 +139,9 @@ def describe(
             "engine": target.entry.engine,
             "effect": policy.effect_for(bus, ident, target.entry.effect),
             "enabled": choice.enabled,
-            "gradient": target.entry.engine in GRADIENT_ENGINES,
+            "gradient": target.entry.engine in GRADIENT_ENGINES or (
+                target.entry.engine == "openrgb" and bool(target.openrgb_leds)
+            ),
         })
     return {
         "ok": True,
@@ -163,7 +164,12 @@ def _with_effect(target: Target, policy: Behaviour) -> Target:
     effect = policy.effect_for(bus, ident, target.entry.effect)
     if effect == target.entry.effect:
         return target
-    return Target(replace(target.entry, effect=effect), target.hardware, target.openrgb_devices)
+    return Target(
+        replace(target.entry, effect=effect),
+        target.hardware,
+        target.openrgb_devices,
+        target.openrgb_leds,
+    )
 
 
 def _plain(text: str) -> str:
