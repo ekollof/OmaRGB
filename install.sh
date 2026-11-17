@@ -51,12 +51,23 @@ esac
 export PATH
 EOF
 
-# The earlier K08-only hook paints the same keyboard. Step it aside.
+# The earlier K08-only hook paints the same keyboard. omarchy-hook runs every
+# file in the hook directory, so a renamed script there still runs. Park it
+# outside that directory.
 disabled=()
+park_dir="$state_dir/parked-hooks"
 for hook in theme-set.d/vanguard-k08-rgb post-boot.d/vanguard-k08-rgb; do
   source_hook="$hook_dir/$hook"
-  if [[ -f $source_hook && ! -f $source_hook.disabled-by-omargb ]]; then
-    mv "$source_hook" "$source_hook.disabled-by-omargb"
+  legacy="$source_hook.disabled-by-omargb"
+  parked="$park_dir/$hook"
+  if [[ -f $source_hook || -f $legacy ]]; then
+    mkdir -p "$(dirname "$parked")"
+    if [[ -f $source_hook ]]; then
+      mv "$source_hook" "$parked"
+      rm -f "$legacy"
+    else
+      mv "$legacy" "$parked"
+    fi
     disabled+=("$hook")
   fi
 done

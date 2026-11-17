@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from omargb.catalog import Target, load_database, match
+from omargb.debounce import remember, unchanged
 from omargb.engines import ENGINES
 from omargb.engines.openrgb import list_devices
 from omargb.scan import scan
@@ -26,6 +27,8 @@ def run(
     dry_run: bool = False,
     root: Path | None = None,
     openrgb_devices: list[tuple[int, str]] | None = None,
+    debounce: bool = False,
+    state: Path | None = None,
 ) -> Report:
     theme = load_theme(colors or default_colors_path())
     if theme is None:
@@ -38,7 +41,13 @@ def run(
     if openrgb_devices is None and needs_openrgb:
         openrgb_devices = list_devices()
     targets = match(entries, hardware, openrgb_devices or [])
-    return _apply(theme, targets, dry_run)
+    state = state or Path.home() / ".local/state/omargb"
+    if debounce and not dry_run and targets and unchanged(state, theme, targets):
+        return Report([f"unchanged solid {theme.solid_hex()}"])
+    report = _apply(theme, targets, dry_run)
+    if not dry_run and _settled(report):
+        remember(state, theme, targets)
+    return report
 
 
 def _apply(theme: Theme, targets: list[Target], dry_run: bool) -> Report:
@@ -65,6 +74,14 @@ def _apply(theme: Theme, targets: list[Target], dry_run: bool) -> Report:
             if fallback is not None:
                 lines.append(fallback.apply(theme, group, dry_run) or f"{group[0].entry.fallback}: nothing to do")
     return Report(lines, not_ready)
+
+
+def _settled(report: Report) -> bool:
+    """True when hardware was painted and every engine accepted the theme."""
+    if report.not_ready:
+        return False
+    painted = [line for line in report.lines if not line.startswith("theme solid")]
+    return bool(painted) and not any(_failed(line) for line in painted)
 
 
 def _failed(outcome: str) -> bool:

@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from omargb.apply import Report, run
 from omargb.console import present_lines, status_mark
-from omargb.catalog import load_database, match
+from omargb.catalog import Entry, Target, load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
 from omargb.engines.homeassistant import HomeAssistant
 from omargb.scan import Hardware, scan
@@ -68,6 +68,75 @@ class ConsoleTest(unittest.TestCase):
         self.assertIn("  Corsair Vengeance RGB Pro DDR4 ×2", shown)
         self.assertNotIn("5:", "\n".join(shown))
         self.assertIn("  Corsair Commander PRO", shown)
+
+
+class DebounceTest(unittest.TestCase):
+    def test_a_repeat_of_the_same_palette_does_not_paint(self):
+        theme = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        target = Target(entry, Hardware("usb", "041e:3126", "K08"))
+        calls: list[bool] = []
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                calls.append(dry_run)
+                return "vanguard_k08 #0091ff"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            colors = state / "colors.toml"
+            colors.write_text("color\n")
+            with (
+                patch("omargb.apply.load_theme", return_value=theme),
+                patch("omargb.apply.load_database", return_value=[entry]),
+                patch("omargb.apply.scan", return_value=[target.hardware]),
+                patch("omargb.apply.match", return_value=[target]),
+                patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+            ):
+                first = run(colors=colors, state=state)
+                second = run(colors=colors, debounce=True, state=state)
+                forced = run(colors=colors, state=state)
+                planned = run(colors=colors, dry_run=True, debounce=True, state=state)
+        self.assertEqual(calls, [False, False, True])
+        self.assertIn("#0091ff", first.text())
+        self.assertEqual(second.text(), "unchanged solid #0091ff")
+        self.assertIn("vanguard_k08", forced.text())
+        self.assertIn("vanguard_k08", planned.text())
+        self.assertEqual(status_mark(second, "apply"), ("32", "Done"))
+
+    def test_a_failed_paint_is_retried(self):
+        theme = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        target = Target(entry, Hardware("usb", "041e:3126", "K08"))
+        calls: list[str] = []
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                calls.append("paint")
+                if len(calls) == 1:
+                    return "vanguard_k08: lighting interface not ready"
+                return "vanguard_k08 #0091ff"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            colors = state / "colors.toml"
+            colors.write_text("color\n")
+            with (
+                patch("omargb.apply.load_theme", return_value=theme),
+                patch("omargb.apply.load_database", return_value=[entry]),
+                patch("omargb.apply.scan", return_value=[target.hardware]),
+                patch("omargb.apply.match", return_value=[target]),
+                patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+            ):
+                first = run(colors=colors, debounce=True, state=state)
+                second = run(colors=colors, debounce=True, state=state)
+        self.assertTrue(first.not_ready)
+        self.assertEqual(calls, ["paint", "paint"])
+        self.assertIn("vanguard_k08 #0091ff", second.text())
 
 
 class PaletteTest(unittest.TestCase):
@@ -239,8 +308,16 @@ class InstallTest(unittest.TestCase):
                 self.assertEqual(completed.returncode, 0, completed.stderr)
                 return completed
 
+            k08 = home / ".config/omarchy/hooks/theme-set.d/vanguard-k08-rgb"
+            k08.parent.mkdir(parents=True)
+            k08.write_text("#!/bin/bash\necho paint\n")
+
             first = install()
             self.assertIn("Installed into this session.", first.stdout)
+            parked = home / ".local/state/omargb/parked-hooks/theme-set.d/vanguard-k08-rgb"
+            self.assertEqual(parked.read_text(), "#!/bin/bash\necho paint\n")
+            self.assertFalse(k08.exists())
+            self.assertFalse(k08.with_name("vanguard-k08-rgb.disabled-by-omargb").exists())
             share = home / ".local/share/omargb"
             hooks = home / ".config/omarchy/hooks"
             stale = share / "shims" / "retired-painter"
@@ -252,8 +329,17 @@ class InstallTest(unittest.TestCase):
             recorded["installed"].append(str(retired_unit))
             state.write_text(json.dumps(recorded, indent=2) + "\n")
 
+            legacy = hooks / "post-boot.d/vanguard-k08-rgb.disabled-by-omargb"
+            legacy.parent.mkdir(parents=True, exist_ok=True)
+            legacy.write_text("old\n")
+
             second = install()
             self.assertIn("Updated hooks, shims, and units from this checkout.", second.stdout)
+            self.assertFalse(legacy.exists())
+            self.assertEqual(
+                (home / ".local/state/omargb/parked-hooks/post-boot.d/vanguard-k08-rgb").read_text(),
+                "old\n",
+            )
 
             self.assertFalse(stale.exists())
             self.assertFalse(retired_unit.exists())
@@ -262,7 +348,10 @@ class InstallTest(unittest.TestCase):
             self.assertEqual((share / "src").resolve(), project)
             self.assertEqual((home / ".local/bin/omargb").resolve(), (project / "bin/omargb").resolve())
             after = json.loads(state.read_text())
-            self.assertEqual(after["disabled_hooks"], [])
+            self.assertEqual(after["disabled_hooks"], [
+                "theme-set.d/vanguard-k08-rgb",
+                "post-boot.d/vanguard-k08-rgb",
+            ])
             self.assertEqual(after["disabled_units"], [])
             self.assertNotIn(str(retired_unit), after["installed"])
             self.assertIn(str(share / "shims/omarchy-theme-set-keyboard"), after["installed"])

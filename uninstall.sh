@@ -22,7 +22,7 @@ rm -rf "$share_dir/shims"
 rm -f "$share_dir/src"
 
 if [[ -f $state_file ]]; then
-  python3 - "$state_file" "$hook_dir" << 'PY'
+  python3 - "$state_file" "$hook_dir" "$state_dir/parked-hooks" << 'PY'
 import json
 import subprocess
 import sys
@@ -30,11 +30,15 @@ from pathlib import Path
 
 state = json.loads(Path(sys.argv[1]).read_text())
 hook_dir = Path(sys.argv[2])
+park_dir = Path(sys.argv[3])
 for relative in state.get("disabled_hooks", []):
-    disabled = hook_dir / f"{relative}.disabled-by-omargb"
     original = hook_dir / relative
-    if disabled.is_file() and not original.exists():
-        disabled.rename(original)
+    parked = park_dir / relative
+    legacy = hook_dir / f"{relative}.disabled-by-omargb"
+    source = parked if parked.is_file() else legacy
+    if source.is_file() and not original.exists():
+        original.parent.mkdir(parents=True, exist_ok=True)
+        source.rename(original)
 for unit in state.get("disabled_units", []):
     subprocess.run(["systemctl", "--user", "enable", "--now", unit], check=False)
 PY
