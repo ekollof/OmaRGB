@@ -19,6 +19,7 @@ OmaRGB paints RGB hardware from the active Omarchy theme. This file is the worki
 | Which ids match which engine | `omargb/catalog.py` |
 | USB, PCI, board, and Home Assistant discovery | `omargb/scan.py` |
 | Install, hooks, login PATH | `install.sh`, `uninstall.sh`, `hooks/`, `shims/`, `systemd/` |
+| Bar icon and painting controls | `shell/`, read by `omargb` from `~/.config/omargb/behaviour.json` |
 
 Paint a device only when the database matches it. An unlisted lamp stays dark.
 

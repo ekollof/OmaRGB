@@ -31,6 +31,15 @@ omargb plan     # show the match and the colours, change nothing
 omargb apply    # paint matched hardware
 ```
 
+The bar icon opens the same controls: follow the theme or leave the lights as they are, per device, and a solid colour or the theme gradient on the Vanguard K08. The choice is `~/.config/omargb/behaviour.json`. `omargb plan --json` prints it with the matched devices.
+
+<p>
+  <img src="assets/bar.png" alt="The OmaRGB lightbulb in the Omarchy bar" width="350">
+</p>
+<p>
+  <img src="assets/panel.png" alt="The OmaRGB panel: follow the theme, and a gradient row inside the Vanguard K08 card" width="368">
+</p>
+
 In a terminal the report uses Omarchy's gum theme: an accent border and the green or red status mark. The theme hook and the palette watcher are not a terminal, so they log the plain lines.
 
 Colours come from the active theme. Gradient devices use the theme's colour stops. One-colour devices use a single stop. Black, white, and the terminal chrome slots `color0`, `color7`, `color8`, and `color15` are left out.
@@ -67,3 +76,5 @@ python3 tests/test_omargb.py
 ```
 
 Agents working in this tree should read [AGENTS.md](AGENTS.md) first.
+
+OmaRGB is [MIT licensed](LICENSE).

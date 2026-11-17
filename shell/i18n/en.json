@@ -1,0 +1,14 @@
+{
+  "bar.tooltip": "OmaRGB · left click: painting controls",
+  "panel.title": "OmaRGB",
+  "panel.follow": "Follow the theme",
+  "panel.followOn": "A theme change paints the matched devices",
+  "panel.followOff": "A theme change leaves the lights as they are",
+  "panel.gradient": "Gradient",
+  "panel.gradientOn": "This device uses the theme's colour stops",
+  "panel.gradientOff": "This device uses one colour",
+  "panel.apply": "Apply now",
+  "panel.applying": "Painting…",
+  "panel.empty": "No matched devices",
+  "panel.colour": "Colour %1"
+}

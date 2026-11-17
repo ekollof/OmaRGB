@@ -14,6 +14,11 @@ unit_dir="$HOME/.config/systemd/user"
 state_file="$state_dir/install.json"
 
 systemctl --user disable --now omargb-theme.path >/dev/null 2>&1 || true
+plugin_id="io.github.ekollof.omargb"
+plugin_dest="$HOME/.config/omarchy/plugins/$plugin_id"
+if [[ -d $plugin_dest ]]; then
+  omarchy plugin remove "$plugin_id" --yes || rm -rf "$plugin_dest"
+fi
 rm -f "$unit_dir/omargb-apply.service" "$unit_dir/omargb-theme.path"
 rm -f "$hook_dir/theme-set.d/omargb" "$hook_dir/post-boot.d/omargb"
 rm -f "$HOME/.config/uwsm/env.d/90-omargb"

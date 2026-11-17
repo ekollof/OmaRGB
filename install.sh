@@ -42,6 +42,27 @@ install -m 755 "$root/hooks/post-boot.sh" "$hook_dir/post-boot.d/omargb"
 install -m 644 "$root/systemd/omargb-apply.service" "$unit_dir/omargb-apply.service"
 install -m 644 "$root/systemd/omargb-theme.path" "$unit_dir/omargb-theme.path"
 
+plugin_id="io.github.ekollof.omargb"
+plugin_dest="$HOME/.config/omarchy/plugins/$plugin_id"
+rm -rf "$plugin_dest"
+mkdir -p "$plugin_dest"
+cp -a "$root/shell/." "$plugin_dest/"
+if [[ ${OMARGB_INSTALL_SHELL:-1} == 1 ]]; then
+  omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+  shell_json="$HOME/.config/omarchy/shell.json"
+  present=0
+  if [[ -f $shell_json ]] && jq -e --arg id "$plugin_id" '
+    [.bar.layout.left, .bar.layout.centerBegin, .bar.layout.center, .bar.layout.centerEnd, .bar.layout.right, .bar.layout.tray]
+    | flatten | any(.id == $id)
+  ' "$shell_json" >/dev/null; then
+    present=1
+  fi
+  if (( present == 0 )); then
+    omarchy plugin enable "$plugin_id" --section right --after io.github.ekollof.wallpaperctl \
+      || omarchy plugin enable "$plugin_id" --section right
+  fi
+fi
+
 cat > "$env_dir/90-omargb" << 'EOF'
 # Put OmaRGB ahead of Omarchy's own RGB painters.
 case ":$PATH:" in
@@ -213,6 +234,7 @@ card_lines=(
   "$summary"
   "• The command and device database follow this checkout."
   "• A theme or palette change runs omargb apply."
+  "• The bar icon opens the painting controls."
 )
 if [[ ${OMARGB_INSTALL_DEPS:-1} == 1 ]]; then
   if (( ${#hardware[@]} )); then

@@ -12,7 +12,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from omargb.apply import Report, run
+from omargb.apply import Report, describe, run
+from omargb.behaviour import Behaviour, load, save
 from omargb.console import present_lines, status_mark
 from omargb.catalog import Entry, Target, load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
@@ -137,6 +138,90 @@ class DebounceTest(unittest.TestCase):
         self.assertTrue(first.not_ready)
         self.assertEqual(calls, ["paint", "paint"])
         self.assertIn("vanguard_k08 #0091ff", second.text())
+
+
+class BehaviourTest(unittest.TestCase):
+    def _theme(self):
+        return Theme(Path("colors.toml"), ((0, 145, 255), (0, 80, 255)), (0, 145, 255))
+
+    def _target(self):
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        return Target(entry, Hardware("usb", "041e:3126", "K08"))
+
+    def _run(self, policy: Behaviour, calls: list):
+        theme = self._theme()
+        target = self._target()
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                calls.append(targets[0].entry.effect)
+                return "vanguard_k08 #0091ff"
+
+        with (
+            patch("omargb.apply.load_theme", return_value=theme),
+            patch("omargb.apply.load_database", return_value=[target.entry]),
+            patch("omargb.apply.scan", return_value=[target.hardware]),
+            patch("omargb.apply.match", return_value=[target]),
+            patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+        ):
+            return run(colors=Path("colors.toml"), behaviour=policy)
+
+    def test_a_disabled_device_is_left_aside(self):
+        policy = Behaviour()
+        policy.set_device("usb", "041e:3126", enabled=False)
+        calls: list[str] = []
+        report = self._run(policy, calls)
+        self.assertEqual(calls, [])
+        self.assertIn("aside K08", report.text())
+
+    def test_solid_override_reaches_the_engine(self):
+        policy = Behaviour()
+        policy.set_device("usb", "041e:3126", effect="solid")
+        calls: list[str] = []
+        self._run(policy, calls)
+        self.assertEqual(calls, ["solid"])
+
+    def test_painting_off_does_not_open_an_engine(self):
+        policy = Behaviour()
+        policy.set_enabled(False)
+        calls: list[str] = []
+        report = self._run(policy, calls)
+        self.assertEqual(calls, [])
+        self.assertEqual(report.text(), "painting is off")
+
+    def test_describe_keeps_a_disabled_device(self):
+        policy = Behaviour()
+        policy.set_device("usb", "041e:3126", enabled=False)
+        theme = self._theme()
+        target = self._target()
+        with (
+            patch("omargb.apply.load_theme", return_value=theme),
+            patch("omargb.apply.load_database", return_value=[target.entry]),
+            patch("omargb.apply.scan", return_value=[target.hardware]),
+            patch("omargb.apply.match", return_value=[target]),
+        ):
+            document = describe(colors=Path("colors.toml"), behaviour=policy)
+        self.assertTrue(document["ok"])
+        self.assertEqual(document["devices"][0]["name"], "K08")
+        self.assertFalse(document["devices"][0]["enabled"])
+        self.assertTrue(document["devices"][0]["gradient"])
+
+    def test_config_round_trip_drops_a_default_device(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "behaviour.json"
+            policy = Behaviour()
+            policy.set_device("hass", "light.zolder", enabled=False)
+            policy.set_device("usb", "041e:3126", effect="solid")
+            policy.set_device("usb", "041e:3126", effect="default")
+            save(policy, path)
+            loaded = load(path)
+            self.assertFalse(loaded.choice("hass", "light.zolder").enabled)
+            self.assertNotIn(("usb", "041e:3126"), loaded.devices)
+            path.write_text("{")
+            with self.assertRaises(Exception):
+                load(path)
 
 
 class PaletteTest(unittest.TestCase):
@@ -295,6 +380,7 @@ class InstallTest(unittest.TestCase):
             env["OMARGB_SYSTEMCTL_LOG"] = str(log)
             env["OMARGB_INSTALL_UPDATE"] = "0"
             env["OMARGB_INSTALL_DEPS"] = "0"
+            env["OMARGB_INSTALL_SHELL"] = "0"
 
             def install() -> subprocess.CompletedProcess[str]:
                 completed = subprocess.run(
@@ -356,6 +442,10 @@ class InstallTest(unittest.TestCase):
             self.assertNotIn(str(retired_unit), after["installed"])
             self.assertIn(str(share / "shims/omarchy-theme-set-keyboard"), after["installed"])
             self.assertIn("enable --now omargb-theme.path", log.read_text())
+            self.assertEqual(
+                (home / ".config/omarchy/plugins/io.github.ekollof.omargb/manifest.json").read_text(),
+                (project / "shell/manifest.json").read_text(),
+            )
 
     def test_update_fast_forwards_a_clean_checkout_and_stops_when_diverged(self):
         project = Path(__file__).resolve().parent.parent

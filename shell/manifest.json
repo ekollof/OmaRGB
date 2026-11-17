@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.ekollof.omargb",
+  "name": "OmaRGB",
+  "version": "1.0.0",
+  "author": "Emiel Kollof",
+  "license": "MIT",
+  "description": "Choose which RGB devices follow the Omarchy theme",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaRGB",
+    "description": "Choose which RGB devices follow the Omarchy theme",
+    "category": "Desktop",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
