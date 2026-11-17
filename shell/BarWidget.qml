@@ -16,6 +16,9 @@ Panel {
   property string error: ""
   property bool enabled: true
   property string solid: ""
+  property string strategy: "warmest"
+  property string lamp: ""
+  readonly property var strategies: ["warmest", "least_blue", "most_saturated", "coolest", "brightest"]
   property var devices: []
   property int selectedControl: 0
 
@@ -33,15 +36,20 @@ Panel {
   function close() { controller.hide() }
 
   function controlCount() {
-    var count = 2
+    var count = 3
     for (var i = 0; i < devices.length; i++) count += devices[i].gradient ? 2 : 1
     return count
   }
 
   function deviceControl(index) {
-    var at = 1
+    var at = 2
     for (var i = 0; i < index && i < devices.length; i++) at += devices[i].gradient ? 2 : 1
     return at
+  }
+
+  function strategyText() {
+    var name = strings.t("panel.strategy." + strategy)
+    return lamp.length === 7 ? strings.t("panel.strategyDetail").arg(name).arg(lamp) : name
   }
 
   function startTask(kind, args, deadline) {
@@ -83,6 +91,8 @@ Panel {
     }
     enabled = data.enabled === true
     solid = typeof data.solid === "string" && data.solid.length === 7 ? data.solid : ""
+    strategy = strategies.indexOf(data.strategy) >= 0 ? data.strategy : "warmest"
+    lamp = typeof data.lamp === "string" && data.lamp.length === 7 ? data.lamp : ""
     var rows = []
     for (var i = 0; i < data.devices.length && rows.length < 32; i++) {
       var row = data.devices[i]
@@ -105,6 +115,12 @@ Panel {
     startTask(value ? "paint" : "config", ["config", "enabled", value ? "true" : "false"], 10000)
   }
 
+  function cycleStrategy() {
+    var at = strategies.indexOf(strategy)
+    var next = strategies[(at + 1) % strategies.length]
+    startTask("paint", ["config", "strategy", next], 10000)
+  }
+
   function setDevice(index, value) {
     var row = devices[index]
     if (!row) return
@@ -120,7 +136,8 @@ Panel {
   function activate() {
     if (busy) return
     if (selectedControl === 0) { setMaster(!enabled); return }
-    var at = 1
+    if (selectedControl === 1) { cycleStrategy(); return }
+    var at = 2
     for (var i = 0; i < devices.length; i++) {
       if (selectedControl === at) { setDevice(i, !devices[i].enabled); return }
       at++
@@ -259,6 +276,13 @@ Panel {
             enabled: !root.busy
             hasCursor: root.selectedControl === 0
             onClicked: root.setMaster(!root.enabled)
+          }
+          Button {
+            width: parent.width
+            text: root.strategyText()
+            enabled: !root.busy
+            hasCursor: root.selectedControl === 1
+            onClicked: root.cycleStrategy()
           }
           Text {
             width: parent.width

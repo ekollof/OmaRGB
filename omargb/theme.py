@@ -15,6 +15,9 @@ NEUTRAL_SLOTS = {0, 7, 8, 15}
 MIN_PEAK = 24
 PEAK = 255
 STOPS = 8
+# wallpaperctl's rgb_color_strategy names. warmest is what its Home Assistant
+# painter uses so a lamp does not take a blue palette line.
+STRATEGIES = ("warmest", "least_blue", "most_saturated", "coolest", "brightest")
 
 HEX_KEY = re.compile(r'^(\w+)\s*=\s*"#([0-9a-fA-F]{6})"')
 NAMED_SKIP = {"cursor", "icon_mark"}
@@ -25,12 +28,30 @@ class Theme:
     path: Path
     stops: tuple[tuple[int, int, int], ...]
     solid: tuple[int, int, int]
+    colours: tuple[tuple[int, int, int], ...] = ()
 
     def solid_hex(self) -> str:
         return _hex(self.solid)
 
     def stop_hexes(self) -> list[str]:
         return [_hex(colour) for colour in self.stops]
+
+    def choose(self, strategy: str) -> tuple[int, int, int]:
+        """One backlight colour from the theme, scored like wallpaperctl."""
+        pool = self.colours or (self.solid,)
+        name = strategy if strategy in STRATEGIES else "warmest"
+        best = pool[0]
+        best_score: float | None = None
+        for colour in pool:
+            value = _strategy_score(colour, name)
+            lower_wins = name in ("least_blue", "coolest")
+            if best_score is None or (value < best_score if lower_wins else value > best_score):
+                best = colour
+                best_score = value
+        return best
+
+    def choose_hex(self, strategy: str) -> str:
+        return _hex(self.choose(strategy))
 
 
 def _hex(colour: tuple[int, int, int]) -> str:
@@ -87,10 +108,12 @@ def load_theme(path: Path) -> Theme | None:
             if re.fullmatch(r"#?[0-9a-fA-F]{6}", text):
                 sources = [(0, text.removeprefix("#"))]
     converted: list[tuple[float, tuple[int, int, int]]] = []
+    colours: list[tuple[int, int, int]] = []
     for _index, text in sources:
         led = to_led(parse_rgb(text))
         if led is None or led in ((0, 0, 0), (255, 255, 255)):
             continue
+        colours.append(led)
         converted.append((hue(led), led))
     if not converted:
         return None
@@ -106,7 +129,19 @@ def load_theme(path: Path) -> Theme | None:
     chosen.sort()
     stops = tuple(colour for _hue, colour in chosen)
     solid = max(stops, key=lambda colour: max(colour) - min(colour))
-    return Theme(path=path, stops=stops, solid=solid)
+    return Theme(path=path, stops=stops, solid=solid, colours=tuple(colours))
+
+
+def _strategy_score(colour: tuple[int, int, int], strategy: str) -> float:
+    red, green, blue = colour
+    if strategy == "least_blue":
+        return blue - ((red + green) / 2)
+    if strategy == "most_saturated":
+        return float(max(colour) - min(colour))
+    if strategy == "brightest":
+        return (red + green + blue) / 3
+    # warmest scores high when red leads blue. coolest uses the same score and keeps the low one.
+    return red - blue + (red - green) / 2
 
 
 def _read_colors(text: str) -> tuple[list[tuple[int, str]], list[str]]:

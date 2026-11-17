@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from omargb.catalog import Target
+from omargb.theme import STRATEGIES
 
 BUSES = ("usb", "pci", "dmi", "openrgb", "hass")
 EFFECTS = ("solid", "gradient")
@@ -31,6 +32,7 @@ class DeviceChoice:
 @dataclass
 class Behaviour:
     enabled: bool = True
+    strategy: str = "warmest"
     devices: dict[tuple[str, str], DeviceChoice] = field(default_factory=dict)
 
     def choice(self, bus: str, ident: str) -> DeviceChoice:
@@ -38,6 +40,11 @@ class Behaviour:
 
     def set_enabled(self, value: bool) -> None:
         self.enabled = value
+
+    def set_strategy(self, value: str) -> None:
+        if value not in STRATEGIES:
+            raise BehaviourError("behaviour rejected the strategy")
+        self.strategy = value
 
     def set_device(self, bus: str, ident: str, enabled: bool | None = None, effect: str | None = None) -> None:
         if bus not in BUSES or not _valid_id(ident):
@@ -70,7 +77,7 @@ class Behaviour:
             if choice.effect in EFFECTS:
                 row["effect"] = choice.effect
             devices.append(row)
-        return {"version": 1, "enabled": self.enabled, "devices": devices}
+        return {"version": 1, "enabled": self.enabled, "strategy": self.strategy, "devices": devices}
 
 
 def config_path() -> Path:
@@ -103,7 +110,10 @@ def load(path: Path | None = None) -> Behaviour:
     rows = data.get("devices", [])
     if not isinstance(rows, list) or len(rows) > MAX_DEVICES:
         raise BehaviourError("behaviour rejected the config")
-    behaviour = Behaviour(enabled=data["enabled"])
+    strategy = data.get("strategy", "warmest")
+    if strategy not in STRATEGIES:
+        raise BehaviourError("behaviour rejected the config")
+    behaviour = Behaviour(enabled=data["enabled"], strategy=strategy)
     for row in rows:
         if not isinstance(row, dict):
             raise BehaviourError("behaviour rejected the config")

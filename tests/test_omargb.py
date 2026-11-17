@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from omargb.apply import Report, describe, run
+from omargb.apply import Report, _apply, describe, run
 from omargb.behaviour import Behaviour, load, save
 from omargb.console import present_lines, status_mark
 from omargb.catalog import Entry, Target, load_database, match
@@ -219,6 +219,13 @@ class BehaviourTest(unittest.TestCase):
             loaded = load(path)
             self.assertFalse(loaded.choice("hass", "light.zolder").enabled)
             self.assertNotIn(("usb", "041e:3126"), loaded.devices)
+            self.assertEqual(loaded.strategy, "warmest")
+            policy.set_strategy("least_blue")
+            save(policy, path)
+            self.assertEqual(load(path).strategy, "least_blue")
+            path.write_text(path.read_text().replace("least_blue", "fixed"))
+            with self.assertRaises(Exception):
+                load(path)
             path.write_text("{")
             with self.assertRaises(Exception):
                 load(path)
@@ -243,6 +250,19 @@ class PaletteTest(unittest.TestCase):
         self.assertIn((0x5C, 0x00, 0xFF), theme.stops)
         self.assertEqual(min(theme.solid), 0)
         self.assertEqual(max(theme.solid), 255)
+
+    def test_warmest_keeps_red_ahead_of_blue(self):
+        theme = Theme(
+            Path("colors.toml"),
+            ((0, 0, 255), (80, 0, 0)),
+            (0, 0, 255),
+            ((0, 0, 255), (80, 0, 0)),
+        )
+        self.assertEqual(theme.choose("warmest"), (80, 0, 0))
+        self.assertEqual(theme.choose("coolest"), (0, 0, 255))
+        self.assertEqual(theme.choose("least_blue"), (80, 0, 0))
+        self.assertEqual(theme.choose("brightest"), (0, 0, 255))
+        self.assertEqual(theme.choose("nope"), (80, 0, 0))
 
     def test_framework_hue_matches_omarchy(self):
         self.assertEqual(qmk_hue_saturation(parse_rgb("7aa2f7")), (156, 129))
@@ -581,6 +601,20 @@ class HassTest(unittest.TestCase):
         with patch("omargb.engines.homeassistant.urllib.request.urlopen", explode):
             text = HomeAssistant().apply(theme, targets, dry_run=True)
         self.assertEqual(text, "homeassistant dry-run light.zolder #0091ff")
+
+    def test_apply_picks_the_warmest_colour_for_lamps(self):
+        targets = match(load_database(), [Hardware("hass", "light.zolder", "light.zolder")], [])
+        theme = Theme(
+            Path("colors.toml"),
+            ((0, 0, 255), (255, 40, 0)),
+            (0, 0, 255),
+            ((0, 0, 255), (255, 40, 0)),
+        )
+        warm = _apply(theme, targets, True, Behaviour()).text()
+        self.assertIn("light.zolder #ff2800", warm)
+        cool = Behaviour()
+        cool.set_strategy("coolest")
+        self.assertIn("light.zolder #0000ff", _apply(theme, targets, True, cool).text())
 
     def test_apply_sets_rgb_only_when_the_light_is_on(self):
         targets = match(

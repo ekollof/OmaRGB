@@ -50,11 +50,11 @@ def run(
         return Report(["painting is off"])
     active = [_with_effect(target, policy) for target in targets if _device_enabled(target, policy)]
     state = state or Path.home() / ".local/state/omargb"
-    if debounce and not dry_run and active and unchanged(state, theme, active):
+    if debounce and not dry_run and active and unchanged(state, theme, active, policy.strategy):
         return Report([f"unchanged solid {theme.solid_hex()}"])
     report = _apply(theme, targets, dry_run, policy)
     if not dry_run and _settled(report):
-        remember(state, theme, active)
+        remember(state, theme, active, policy.strategy)
     return report
 
 
@@ -130,7 +130,9 @@ def describe(
     return {
         "ok": True,
         "enabled": policy.enabled,
+        "strategy": policy.strategy,
         "solid": theme.solid_hex(),
+        "lamp": theme.choose_hex(policy.strategy),
         "stops": theme.stop_hexes(),
         "devices": devices,
     }
@@ -182,7 +184,10 @@ def _apply(theme: Theme, targets: list[Target], dry_run: bool, policy: Behaviour
         if engine is None:
             lines.append(f"{name}: unknown engine")
             continue
-        outcome = engine.apply(theme, group, dry_run)
+        painted = theme
+        if name == "homeassistant":
+            painted = replace(theme, solid=theme.choose(policy.strategy))
+        outcome = engine.apply(painted, group, dry_run)
         if not outcome:
             continue
         lines.append(outcome)
@@ -191,7 +196,7 @@ def _apply(theme: Theme, targets: list[Target], dry_run: bool, policy: Behaviour
         if _failed(outcome) and group[0].entry.fallback:
             fallback = ENGINES.get(group[0].entry.fallback)
             if fallback is not None:
-                lines.append(fallback.apply(theme, group, dry_run) or f"{group[0].entry.fallback}: nothing to do")
+                lines.append(fallback.apply(painted, group, dry_run) or f"{group[0].entry.fallback}: nothing to do")
     return Report(lines, not_ready)
 
 

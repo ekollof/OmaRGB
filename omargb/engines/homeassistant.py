@@ -2,6 +2,7 @@
 
 Same file wallpaperctl uses. A lamp is painted only when the database matched
 it and the light is already on. The call is light.turn_on with rgb_color.
+apply.py puts the behaviour strategy's colour in theme.solid for this engine.
 """
 
 import json

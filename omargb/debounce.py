@@ -16,21 +16,21 @@ from omargb.theme import Theme
 STAMP_NAME = "last-apply"
 
 
-def unchanged(state: Path, theme: Theme, targets: list[Target]) -> bool:
+def unchanged(state: Path, theme: Theme, targets: list[Target], strategy: str = "warmest") -> bool:
     path = state / STAMP_NAME
     try:
         recorded = path.read_text().strip()
     except OSError:
         return False
-    return recorded == fingerprint(theme, targets) and bool(recorded)
+    return recorded == fingerprint(theme, targets, strategy) and bool(recorded)
 
 
-def remember(state: Path, theme: Theme, targets: list[Target]) -> None:
+def remember(state: Path, theme: Theme, targets: list[Target], strategy: str = "warmest") -> None:
     state.mkdir(parents=True, exist_ok=True)
-    (state / STAMP_NAME).write_text(fingerprint(theme, targets) + "\n")
+    (state / STAMP_NAME).write_text(fingerprint(theme, targets, strategy) + "\n")
 
 
-def fingerprint(theme: Theme, targets: list[Target]) -> str:
+def fingerprint(theme: Theme, targets: list[Target], strategy: str = "warmest") -> str:
     rows = []
     for target in targets:
         entry = target.entry
@@ -43,5 +43,11 @@ def fingerprint(theme: Theme, targets: list[Target]) -> str:
             target.hardware.ident,
             devices,
         )))
-    body = "\n".join([theme.solid_hex(), " ".join(theme.stop_hexes()), *sorted(rows)])
+    body = "\n".join([
+        theme.solid_hex(),
+        " ".join(theme.stop_hexes()),
+        strategy,
+        theme.choose_hex(strategy),
+        *sorted(rows),
+    ])
     return hashlib.sha256(body.encode()).hexdigest()

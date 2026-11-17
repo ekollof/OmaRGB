@@ -64,12 +64,15 @@ def _config(words: list[str], path: Path | None) -> int:
             return 0
         if words[0] == "enabled" and len(words) == 2:
             behaviour.set_enabled(parse_bool(words[1]))
+        elif words[0] == "strategy" and len(words) == 2:
+            behaviour.set_strategy(words[1])
         elif words[0] == "device" and len(words) == 5 and words[3] in ("enabled", "effect"):
             enabled = parse_bool(words[4]) if words[3] == "enabled" else None
             effect = words[4] if words[3] == "effect" else None
             behaviour.set_device(words[1], words[2], enabled=enabled, effect=effect)
         else:
             print("omargb: config enabled true|false", file=sys.stderr)
+            print("omargb: config strategy warmest|least_blue|most_saturated|coolest|brightest", file=sys.stderr)
             print("omargb: config device <bus> <id> enabled true|false", file=sys.stderr)
             print("omargb: config device <bus> <id> effect solid|gradient|default", file=sys.stderr)
             return 2

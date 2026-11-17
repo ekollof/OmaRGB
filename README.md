@@ -67,7 +67,7 @@ Engines live in `omargb/engines/`. A new engine is a class with `name` and `appl
 - `openrgb` sets static mode at full brightness to the theme colour.
 - `openlinkhub` posts the theme colour to the local OpenLinkHub service (`127.0.0.1:27003`, `/api/color/all`). If that service is down, the Commander Pro entry falls back to OpenRGB.
 - `asus_rog` and `framework16` cover the laptop keyboards Omarchy used to paint itself.
-- `homeassistant` sets the theme colour on Home Assistant lights that are already on.
+- `homeassistant` sets a theme colour on Home Assistant lights that are already on. The default is the warmest palette colour, so a blue stop does not win. The bar panel cycles warmest, least blue, most saturated, coolest, and brightest.
 
 ## Tests
 
