@@ -153,11 +153,16 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened
-    focusTarget: keys
+    focusTarget: panel.loadedContent
     contentWidth: panel.fittedContentWidth(Style.space(360))
-    contentHeight: panel.fittedContentHeight(content.implicitHeight, Style.space(560))
-    PanelKeyCatcher {
+    contentHeight: panel.fittedContentHeight(panel.loadedContentHeight, Style.space(560))
+    // The card stays at the cap and the host viewport scrolls the rest.
+    // Its own scrollbar fades out at rest, so the thumb below stays painted
+    // on the card for as long as the list overflows.
+    scrollOverflow: true
+    content: PanelKeyCatcher {
       id: keys
+      implicitHeight: form.implicitHeight
       anchors.fill: parent
       onCloseRequested: root.close()
       onMoveRequested: function(dx, dy) {
@@ -169,15 +174,56 @@ Panel {
         root.selectedControl = (root.selectedControl + direction + count) % count
       }
       onActivateRequested: root.activate()
-      Flickable {
-        anchors.fill: parent
-        contentWidth: width
-        contentHeight: content.implicitHeight
-        clip: true
-        Column {
-          id: content
-          width: parent.width
-          spacing: Style.spacing.sm
+
+      Rectangle {
+        id: thumb
+        z: 20
+        width: 4
+        radius: 2
+        color: Commons.Color.foreground
+        opacity: 0.7
+        visible: false
+      }
+
+      property bool thumbBound: false
+      function placeThumb() {
+        var item = parent
+        var flick = null
+        while (item) {
+          if (item.visibleArea !== undefined && item.contentHeight !== undefined) {
+            flick = item
+            break
+          }
+          item = item.parent
+        }
+        if (!flick || !flick.parent) {
+          thumb.visible = false
+          return
+        }
+        if (!thumbBound) {
+          thumbBound = true
+          flick.contentYChanged.connect(placeThumb)
+          flick.heightChanged.connect(placeThumb)
+          flick.contentHeightChanged.connect(placeThumb)
+        }
+        var overflowing = flick.contentHeight > flick.height + 1
+        thumb.visible = overflowing
+        if (!overflowing) return
+        if (thumb.parent !== flick.parent) thumb.parent = flick.parent
+        var span = Math.max(1, flick.contentHeight - flick.height)
+        var height = Math.max(36, flick.height * flick.height / flick.contentHeight)
+        var travel = Math.max(1, flick.height - height)
+        var origin = flick.mapToItem(flick.parent, 0, 0)
+        thumb.height = height
+        thumb.x = origin.x + flick.width - thumb.width - 4
+        thumb.y = origin.y + (flick.contentY / span) * travel
+      }
+      Component.onCompleted: Qt.callLater(placeThumb)
+      onImplicitHeightChanged: Qt.callLater(placeThumb)
+      Column {
+        id: form
+        width: parent.width
+        spacing: Style.spacing.sm
           Text {
             text: strings.t("panel.title")
             textFormat: Text.PlainText
@@ -229,7 +275,7 @@ Panel {
               id: device
               required property var modelData
               required property int index
-              width: content.width
+              width: form.width
               implicitHeight: modelData.gradient ? gradientCard.implicitHeight : plain.implicitHeight
 
               Toggle {
@@ -300,7 +346,6 @@ Panel {
             onClicked: root.startTask("apply", ["apply"], 45000)
           }
         }
-      }
     }
   }
 

@@ -37,7 +37,7 @@ The bar icon opens the same controls: follow the theme or leave the lights as th
   <img src="assets/bar.png" alt="The OmaRGB lightbulb in the Omarchy bar" width="350">
 </p>
 <p>
-  <img src="assets/panel.png" alt="The OmaRGB panel: follow the theme, and a gradient row inside the Vanguard K08 card" width="368">
+  <img src="assets/panel.png" alt="The OmaRGB panel: follow the theme, a gradient row inside the Vanguard K08 card, and a scrollbar for the rest" width="360">
 </p>
 
 In a terminal the report uses Omarchy's gum theme: an accent border and the green or red status mark. The theme hook and the palette watcher are not a terminal, so they log the plain lines.

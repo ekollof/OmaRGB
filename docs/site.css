@@ -45,8 +45,8 @@ img.shot[src="bar.png"] {
 }
 
 img.shot[src="panel.png"] {
-  width: min(100%, 368px);
-  aspect-ratio: 368 / 564;
+  width: min(100%, 360px);
+  aspect-ratio: 360 / 554;
 }
 
 h1 {
