@@ -1,0 +1,57 @@
+:root {
+  color-scheme: dark;
+  --bg: #070707;
+  --fg: #f0f0f0;
+  --muted: #bdbdbd;
+  --line: #2a2a2a;
+  --link: #3d8cff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 18px/1.5 "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 5rem;
+}
+
+img {
+  display: block;
+  width: 160px;
+  height: 160px;
+}
+
+h1 {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 2.4rem;
+  letter-spacing: -0.03em;
+}
+
+p { color: var(--muted); }
+
+pre {
+  margin: 2rem 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  background: #101010;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+code {
+  color: var(--fg);
+  font-family: "Noto Sans Mono", ui-monospace, monospace;
+  font-size: 0.95rem;
+}
+
+.links { display: flex; gap: 1.25rem; }
+
+a { color: var(--link); }
+a:hover { color: #8cb8ff; }
