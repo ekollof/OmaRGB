@@ -6,7 +6,7 @@
 
 OmaRGB paints RGB hardware from the active Omarchy theme. Mice, DRAM, motherboard lighting, Corsair hubs, laptop keyboards, and the Sound BlasterX Vanguard K08 are selected from a database of USB, PCI, and board ids, then handed to a matching engine.
 
-Omarchy's own painters (`omarchy-theme-set-keyboard`, OpenRGB, ASUS `asusctl`, Framework `qmk_hid`) turn the theme accent into a pale colour and send that. After install, those commands are shadowed and the theme-set hook runs OmaRGB instead.
+After install, Omarchy's RGB commands (`omarchy-theme-set-keyboard`, OpenRGB, ASUS `asusctl`, Framework `qmk_hid`) are shadowed and the theme-set hook runs OmaRGB instead.
 
 ## Install
 
@@ -31,7 +31,7 @@ omargb apply    # paint matched hardware
 
 In a terminal the report uses Omarchy's gum theme: an accent border and the green or red status mark. The theme hook and the palette watcher are not a terminal, so they log the plain lines.
 
-A backlight cannot show a pastel. Each chosen theme hue has its white floor removed and its strongest channel turned fully on. Gradient devices get those stops in hue order. One-colour devices get the strongest stop. Black, white, and the terminal chrome slots `color0`, `color7`, `color8`, and `color15` are skipped.
+Colours come from the active theme. Gradient devices use the theme's colour stops. One-colour devices use a single stop. Black, white, and the terminal chrome slots `color0`, `color7`, `color8`, and `color15` are left out.
 
 ## Adding hardware
 
@@ -53,7 +53,7 @@ Engines live in `omargb/engines/`. A new engine is a class with `name` and `appl
 ## Engines shipped here
 
 - `vanguard_k08` speaks the K08 hidraw protocol and changes only LED colours, so the key map is left as the keyboard has it.
-- `openrgb` sets static mode at full brightness to the theme colour. It does not mix the colour toward white.
+- `openrgb` sets static mode at full brightness to the theme colour.
 - `openlinkhub` posts the theme colour to the local OpenLinkHub service (`127.0.0.1:27003`, `/api/color/all`). If that service is down, the Commander Pro entry falls back to OpenRGB.
 - `asus_rog` and `framework16` cover the laptop keyboards Omarchy used to paint itself.
 
