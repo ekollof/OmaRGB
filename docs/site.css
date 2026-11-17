@@ -34,10 +34,19 @@ figure {
 
 img.shot {
   display: block;
-  width: auto;
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+img.shot[src="bar.png"] {
+  width: min(100%, 350px);
+  aspect-ratio: 350 / 34;
+}
+
+img.shot[src="panel.png"] {
+  width: min(100%, 368px);
+  aspect-ratio: 368 / 564;
 }
 
 h1 {
