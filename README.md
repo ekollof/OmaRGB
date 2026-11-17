@@ -13,8 +13,12 @@ After install, Omarchy's RGB commands (`omarchy-theme-set-keyboard`, OpenRGB, AS
 ## Install
 
 ```bash
-~/Work/OmaRGB/install.sh
+git clone https://github.com/ekollof/OmaRGB.git
+cd OmaRGB
+./install.sh
 ```
+
+From a checkout you already have, run `./install.sh` in that directory.
 
 This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `colors.toml` and `keyboard.rgb` in `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. It installs a painter's packages only when this machine has a matching device. The package list is `share/painters.toml`. [wallpaperctl](https://github.com/ekollof/wallpaperctl) builds that palette from the current wallpaper and rewrites `colors.toml` without running `omarchy theme set`.
 
