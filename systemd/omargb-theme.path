@@ -2,8 +2,12 @@
 Description=Watch the Omarchy theme for RGB hardware
 
 [Path]
-# wallpaperctl replaces colors.toml without running the theme-set hook.
-PathChanged=%h/.local/state/omarchy/current/theme
+# wallpaperctl replaces colors.toml and does not run the theme-set hook.
+# The theme directory also changes when backgrounds and previews are written.
+# A oneshot that starts on those files can still be running, or already
+# finished, when the palette lands, and systemd does not queue that event.
+PathChanged=%h/.local/state/omarchy/current/theme/colors.toml
+PathChanged=%h/.local/state/omarchy/current/theme/keyboard.rgb
 Unit=omargb-apply.service
 
 [Install]

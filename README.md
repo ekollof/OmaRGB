@@ -16,7 +16,7 @@ After install, Omarchy's RGB commands (`omarchy-theme-set-keyboard`, OpenRGB, AS
 ~/Work/OmaRGB/install.sh
 ```
 
-This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. It installs a painter's packages only when this machine has a matching device. The package list is `share/painters.toml`. [wallpaperctl](https://github.com/ekollof/wallpaperctl) builds that palette from the current wallpaper and rewrites `colors.toml` without running `omarchy theme set`.
+This links `omargb` onto `PATH`, installs a theme-set hook and a login hook, and watches `colors.toml` and `keyboard.rgb` in `~/.local/state/omarchy/current/theme` so a wallpaper palette update still recolours the hardware. It installs a painter's packages only when this machine has a matching device. The package list is `share/painters.toml`. [wallpaperctl](https://github.com/ekollof/wallpaperctl) builds that palette from the current wallpaper and rewrites `colors.toml` without running `omarchy theme set`.
 
 Running it again fast-forwards this checkout from its upstream when the worktree is clean, then refreshes the hooks, shims, and units. A dirty or diverged checkout is left untouched. The stepped-aside painters stay stepped aside. `omargb` and `share/devices.toml` are the files in this checkout, reached through the link.
 

@@ -12,6 +12,12 @@ from omargb.engines.openrgb import list_devices
 from omargb.scan import scan
 from omargb.theme import Theme, default_colors_path, load_theme
 
+# The keyboard write takes a few seconds. A theme swap or a wallpaperctl
+# rewrite can replace the palette while that write still holds the apply
+# lock, and systemd does not queue the path event for a running oneshot.
+# Read the file again before remembering it, and paint what is there now.
+PALETTE_PASSES = 8
+
 
 @dataclass
 class Report:
@@ -34,27 +40,36 @@ def run(
     behaviour_path: Path | None = None,
     read_behaviour: bool = False,
 ) -> Report:
-    prepared = prepare(
-        colors=colors,
-        database=database,
-        root=root,
-        openrgb_devices=openrgb_devices,
-        behaviour=behaviour,
-        behaviour_path=behaviour_path,
-        read_behaviour=read_behaviour,
-    )
-    if isinstance(prepared, Report):
-        return prepared
-    theme, targets, policy = prepared
-    if not policy.enabled and not dry_run:
-        return Report(["painting is off"])
-    active = [_with_effect(target, policy) for target in targets if _device_enabled(target, policy)]
     state = state or Path.home() / ".local/state/omargb"
-    if debounce and not dry_run and active and unchanged(state, theme, active, policy.strategy):
-        return Report([f"unchanged solid {theme.solid_hex()}"])
-    report = _apply(theme, targets, dry_run, policy)
-    if not dry_run and _settled(report):
-        remember(state, theme, active, policy.strategy)
+    report = Report(["no theme colours to apply"])
+    for _ in range(PALETTE_PASSES):
+        prepared = prepare(
+            colors=colors,
+            database=database,
+            root=root,
+            openrgb_devices=openrgb_devices,
+            behaviour=behaviour,
+            behaviour_path=behaviour_path,
+            read_behaviour=read_behaviour,
+        )
+        if isinstance(prepared, Report):
+            return prepared
+        theme, targets, policy = prepared
+        if not policy.enabled and not dry_run:
+            return Report(["painting is off"])
+        active = [_with_effect(target, policy) for target in targets if _device_enabled(target, policy)]
+        if dry_run:
+            return _apply(theme, targets, dry_run, policy)
+        if debounce and active and unchanged(state, theme, active, policy.strategy):
+            if _palette_held(theme, policy.strategy):
+                return Report([f"unchanged solid {theme.solid_hex()}"])
+            continue
+        report = _apply(theme, targets, dry_run, policy)
+        if not _settled(report):
+            return report
+        if _palette_held(theme, policy.strategy):
+            remember(state, theme, active, policy.strategy)
+            return report
     return report
 
 
@@ -198,6 +213,18 @@ def _apply(theme: Theme, targets: list[Target], dry_run: bool, policy: Behaviour
             if fallback is not None:
                 lines.append(fallback.apply(painted, group, dry_run) or f"{group[0].entry.fallback}: nothing to do")
     return Report(lines, not_ready)
+
+
+def _palette_held(theme: Theme, strategy: str) -> bool:
+    """True when the palette file still has the colours just read or painted."""
+    current = load_theme(theme.path)
+    if current is None:
+        return False
+    return (
+        current.solid == theme.solid
+        and current.stops == theme.stops
+        and current.choose(strategy) == theme.choose(strategy)
+    )
 
 
 def _settled(report: Report) -> bool:

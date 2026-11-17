@@ -12,7 +12,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from omargb.apply import Report, _apply, describe, run
+from omargb.apply import PALETTE_PASSES, Report, _apply, describe, run
+from omargb.debounce import fingerprint, remember
 from omargb.behaviour import Behaviour, load, save
 from omargb.console import present_lines, status_mark
 from omargb.catalog import Entry, Target, load_database, match
@@ -138,6 +139,113 @@ class DebounceTest(unittest.TestCase):
         self.assertTrue(first.not_ready)
         self.assertEqual(calls, ["paint", "paint"])
         self.assertIn("vanguard_k08 #0091ff", second.text())
+
+    def test_a_palette_replaced_during_the_paint_is_the_one_remembered(self):
+        blue = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        red = Theme(Path("colors.toml"), ((255, 40, 0),), (255, 40, 0))
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        target = Target(entry, Hardware("usb", "041e:3126", "K08"))
+        loaded: list[str] = []
+        painted: list[str] = []
+
+        def load(_path):
+            # First read is blue. The check after that paint, and every later read, is red.
+            loaded.append("read")
+            return blue if len(loaded) == 1 else red
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                painted.append(theme.solid_hex())
+                return f"vanguard_k08 {theme.solid_hex()}"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            colors = state / "colors.toml"
+            colors.write_text("color\n")
+            with (
+                patch("omargb.apply.load_theme", side_effect=load),
+                patch("omargb.apply.load_database", return_value=[entry]),
+                patch("omargb.apply.scan", return_value=[target.hardware]),
+                patch("omargb.apply.match", return_value=[target]),
+                patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+            ):
+                report = run(colors=colors, debounce=True, state=state)
+            stamp = (state / "last-apply").read_text().strip()
+        self.assertEqual(painted, ["#0091ff", "#ff2800"])
+        self.assertIn("#ff2800", report.text())
+        self.assertEqual(stamp, fingerprint(red, [target], "warmest"))
+
+    def test_a_skipped_palette_is_painted_when_the_file_moves(self):
+        blue = Theme(Path("colors.toml"), ((0, 145, 255),), (0, 145, 255))
+        red = Theme(Path("colors.toml"), ((255, 40, 0),), (255, 40, 0))
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        target = Target(entry, Hardware("usb", "041e:3126", "K08"))
+        loaded: list[str] = []
+        painted: list[str] = []
+
+        def load(_path):
+            loaded.append("read")
+            return blue if len(loaded) == 1 else red
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                painted.append(theme.solid_hex())
+                return f"vanguard_k08 {theme.solid_hex()}"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            colors = state / "colors.toml"
+            colors.write_text("color\n")
+            remember(state, blue, [target], "warmest")
+            with (
+                patch("omargb.apply.load_theme", side_effect=load),
+                patch("omargb.apply.load_database", return_value=[entry]),
+                patch("omargb.apply.scan", return_value=[target.hardware]),
+                patch("omargb.apply.match", return_value=[target]),
+                patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+            ):
+                report = run(colors=colors, debounce=True, state=state)
+            stamp = (state / "last-apply").read_text().strip()
+        self.assertEqual(painted, ["#ff2800"])
+        self.assertIn("#ff2800", report.text())
+        self.assertEqual(stamp, fingerprint(red, [target], "warmest"))
+
+    def test_a_palette_that_keeps_moving_is_not_stamped(self):
+        entry = Entry("usb", "041e:3126", "K08", "vanguard_k08", "gradient", "", "")
+        target = Target(entry, Hardware("usb", "041e:3126", "K08"))
+        reads = {"n": 0}
+
+        def load(_path):
+            reads["n"] += 1
+            channel = reads["n"] % 255
+            colour = (channel, 0, 0)
+            return Theme(Path("colors.toml"), (colour,), colour)
+
+        class Engine:
+            name = "vanguard_k08"
+
+            def apply(self, theme, targets, dry_run):
+                return f"vanguard_k08 {theme.solid_hex()}"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary)
+            colors = state / "colors.toml"
+            colors.write_text("color\n")
+            with (
+                patch("omargb.apply.load_theme", side_effect=load),
+                patch("omargb.apply.load_database", return_value=[entry]),
+                patch("omargb.apply.scan", return_value=[target.hardware]),
+                patch("omargb.apply.match", return_value=[target]),
+                patch("omargb.apply.ENGINES", {"vanguard_k08": Engine()}),
+            ):
+                report = run(colors=colors, debounce=True, state=state)
+            self.assertFalse((state / "last-apply").exists())
+        self.assertIn("vanguard_k08", report.text())
+        self.assertEqual(reads["n"], PALETTE_PASSES * 2)
 
 
 class BehaviourTest(unittest.TestCase):
