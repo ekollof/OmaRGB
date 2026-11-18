@@ -23,7 +23,7 @@ The issue body needs the identifiers the database matches on, and nothing secret
 
 A photo of the device helps. Do not paste macro dumps, keyboard maps, or a lighting template binary. Those are personal to the machine that captured them.
 
-A new device that an existing engine can already paint only needs a `share/devices.toml` row. Say which engine and whether the effect should be `solid` or `gradient`. An OpenRGB keyboard with per-key colour does not need a row: the server reports the device type, and OmaRGB paints it left to right.
+A new device that an existing engine can already paint only needs a `share/devices.toml` row. Say which engine and whether the effect should be `solid` or `gradient`. An OpenRGB keyboard with per-key colour does not need a row: the server reports the device type, and OmaRGB paints it across the keys, or down them when the panel says so.
 
 ## 2. Wait for the issue
 

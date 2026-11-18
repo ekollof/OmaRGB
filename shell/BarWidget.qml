@@ -37,13 +37,13 @@ Panel {
 
   function controlCount() {
     var count = 3
-    for (var i = 0; i < devices.length; i++) count += devices[i].gradient ? 2 : 1
+    for (var i = 0; i < devices.length; i++) count += devices[i].gradient ? (devices[i].axes ? 3 : 2) : 1
     return count
   }
 
   function deviceControl(index) {
     var at = 2
-    for (var i = 0; i < index && i < devices.length; i++) at += devices[i].gradient ? 2 : 1
+    for (var i = 0; i < index && i < devices.length; i++) at += devices[i].gradient ? (devices[i].axes ? 3 : 2) : 1
     return at
   }
 
@@ -104,7 +104,9 @@ Panel {
         name: row.name,
         effect: row.effect === "gradient" ? "gradient" : "solid",
         enabled: row.enabled !== false,
-        gradient: row.gradient === true
+        gradient: row.gradient === true,
+        axes: row.axes === true,
+        direction: row.direction === "down" ? "down" : "across"
       })
     }
     devices = rows
@@ -133,6 +135,12 @@ Panel {
     startTask("paint", ["config", "device", row.bus, row.id, "effect", effect], 10000)
   }
 
+  function setDirection(index, direction) {
+    var row = devices[index]
+    if (!row) return
+    startTask("paint", ["config", "device", row.bus, row.id, "direction", direction], 10000)
+  }
+
   function activate() {
     if (busy) return
     if (selectedControl === 0) { setMaster(!enabled); return }
@@ -147,6 +155,11 @@ Panel {
           return
         }
         at++
+        if (devices[i].axes && selectedControl === at) {
+          setDirection(i, devices[i].direction === "down" ? "across" : "down")
+          return
+        }
+        if (devices[i].axes) at++
       }
     }
     startTask("apply", ["apply"], 45000)
@@ -321,7 +334,9 @@ Panel {
                 radius: Style.cornerRadius
                 color: Style.controlFill(false, false, Commons.Color.foreground, Commons.Color.accent)
                 borderSpec: Border.controlSpec(
-                  root.selectedControl === root.deviceControl(index) || root.selectedControl === root.deviceControl(index) + 1
+                  root.selectedControl === root.deviceControl(index)
+                    || root.selectedControl === root.deviceControl(index) + 1
+                    || (modelData.axes && root.selectedControl === root.deviceControl(index) + 2)
                     ? "hover-cursor" : "normal",
                   Commons.Color.foreground,
                   Commons.Color.accent
@@ -357,6 +372,15 @@ Panel {
                     rowEnabled: !root.busy && device.modelData.enabled
                     hot: root.selectedControl === root.deviceControl(device.index) + 1
                     onClicked: root.setEffect(device.index, device.modelData.effect === "gradient" ? "solid" : "gradient")
+                  }
+                  SettingRow {
+                    visible: device.modelData.axes
+                    label: strings.t("panel.direction")
+                    detail: device.modelData.direction === "down" ? strings.t("panel.directionDown") : strings.t("panel.directionAcross")
+                    checked: device.modelData.direction === "down"
+                    rowEnabled: !root.busy && device.modelData.enabled && device.modelData.effect === "gradient"
+                    hot: root.selectedControl === root.deviceControl(device.index) + 2
+                    onClicked: root.setDirection(device.index, device.modelData.direction === "down" ? "across" : "down")
                   }
                 }
               }

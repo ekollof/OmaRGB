@@ -14,6 +14,7 @@ from omargb.theme import STRATEGIES
 
 BUSES = ("usb", "pci", "dmi", "openrgb", "hass")
 EFFECTS = ("solid", "gradient")
+DIRECTIONS = ("across", "down")
 GRADIENT_ENGINES = {"vanguard_k08"}
 MAX_DEVICES = 64
 MAX_ID = 200
@@ -27,6 +28,8 @@ class BehaviourError(Exception):
 class DeviceChoice:
     enabled: bool = True
     effect: str | None = None
+    # None keeps the default, which paints a gradient from side to side.
+    direction: str | None = None
 
 
 @dataclass
@@ -46,7 +49,14 @@ class Behaviour:
             raise BehaviourError("behaviour rejected the strategy")
         self.strategy = value
 
-    def set_device(self, bus: str, ident: str, enabled: bool | None = None, effect: str | None = None) -> None:
+    def set_device(
+        self,
+        bus: str,
+        ident: str,
+        enabled: bool | None = None,
+        effect: str | None = None,
+        direction: str | None = None,
+    ) -> None:
         if bus not in BUSES or not _valid_id(ident):
             raise BehaviourError("behaviour rejected the device")
         current = self.choice(bus, ident)
@@ -58,7 +68,13 @@ class Behaviour:
             if effect not in EFFECTS:
                 raise BehaviourError("behaviour rejected the effect")
             current.effect = effect
-        if current.enabled and current.effect is None:
+        if direction == "default":
+            current.direction = None
+        elif direction is not None:
+            if direction not in DIRECTIONS:
+                raise BehaviourError("behaviour rejected the direction")
+            current.direction = direction
+        if current.enabled and current.effect is None and current.direction is None:
             self.devices.pop((bus, ident), None)
         else:
             self.devices[(bus, ident)] = current
@@ -70,12 +86,18 @@ class Behaviour:
         chosen = self.choice(bus, ident).effect
         return chosen if chosen in EFFECTS else database_effect
 
+    def direction_for(self, bus: str, ident: str) -> str:
+        chosen = self.choice(bus, ident).direction
+        return chosen if chosen in DIRECTIONS else "across"
+
     def document(self) -> dict:
         devices = []
         for (bus, ident), choice in sorted(self.devices.items()):
             row = {"bus": bus, "id": ident, "enabled": choice.enabled}
             if choice.effect in EFFECTS:
                 row["effect"] = choice.effect
+            if choice.direction in DIRECTIONS:
+                row["direction"] = choice.direction
             devices.append(row)
         return {"version": 1, "enabled": self.enabled, "strategy": self.strategy, "devices": devices}
 
@@ -121,11 +143,18 @@ def load(path: Path | None = None) -> Behaviour:
         ident = row.get("id")
         enabled = row.get("enabled", True)
         effect = row.get("effect")
+        direction = row.get("direction")
         if bus not in BUSES or not isinstance(ident, str) or not _valid_id(ident) or not isinstance(enabled, bool):
             raise BehaviourError("behaviour rejected the config")
         if effect is not None and effect not in EFFECTS:
             raise BehaviourError("behaviour rejected the config")
-        behaviour.devices[(bus, ident)] = DeviceChoice(enabled=enabled, effect=effect if effect in EFFECTS else None)
+        if direction is not None and direction not in DIRECTIONS:
+            raise BehaviourError("behaviour rejected the config")
+        behaviour.devices[(bus, ident)] = DeviceChoice(
+            enabled=enabled,
+            effect=effect if effect in EFFECTS else None,
+            direction=direction if direction in DIRECTIONS else None,
+        )
     return behaviour
 
 

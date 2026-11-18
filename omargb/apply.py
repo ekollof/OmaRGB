@@ -142,6 +142,8 @@ def describe(
             "gradient": target.entry.engine in GRADIENT_ENGINES or (
                 target.entry.engine == "openrgb" and bool(target.openrgb_leds)
             ),
+            "axes": target.entry.engine in GRADIENT_ENGINES or target.spatial,
+            "direction": policy.direction_for(bus, ident),
         })
     return {
         "ok": True,
@@ -162,13 +164,15 @@ def _device_enabled(target: Target, policy: Behaviour) -> bool:
 def _with_effect(target: Target, policy: Behaviour) -> Target:
     bus, ident = device_key(target)
     effect = policy.effect_for(bus, ident, target.entry.effect)
-    if effect == target.entry.effect:
+    direction = policy.direction_for(bus, ident)
+    if effect == target.entry.effect and direction == target.entry.direction:
         return target
     return Target(
-        replace(target.entry, effect=effect),
+        replace(target.entry, effect=effect, direction=direction),
         target.hardware,
         target.openrgb_devices,
         target.openrgb_leds,
+        target.spatial,
     )
 
 

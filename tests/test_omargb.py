@@ -19,6 +19,7 @@ from omargb.behaviour import Behaviour, load, save
 from omargb.console import present_lines, status_mark
 from omargb.catalog import Entry, Target, load_database, match
 from omargb.engines.framework16 import qmk_hue_saturation
+from omargb.engines.vanguard_k08 import ZONES, led_colours
 from omargb.engines.homeassistant import HomeAssistant
 from omargb.engines.openrgb import (
     Controller,
@@ -328,6 +329,8 @@ class BehaviourTest(unittest.TestCase):
         self.assertEqual(document["devices"][0]["name"], "K08")
         self.assertFalse(document["devices"][0]["enabled"])
         self.assertTrue(document["devices"][0]["gradient"])
+        self.assertTrue(document["devices"][0]["axes"])
+        self.assertEqual(document["devices"][0]["direction"], "across")
 
     def test_config_round_trip_drops_a_default_device(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -341,6 +344,11 @@ class BehaviourTest(unittest.TestCase):
             self.assertFalse(loaded.choice("hass", "light.zolder").enabled)
             self.assertNotIn(("usb", "041e:3126"), loaded.devices)
             self.assertEqual(loaded.strategy, "warmest")
+            policy.set_device("openrgb", "G513 RGB MECHANICAL GAMING KEYBOARD", direction="down")
+            save(policy, path)
+            self.assertEqual(load(path).direction_for("openrgb", "G513 RGB MECHANICAL GAMING KEYBOARD"), "down")
+            with self.assertRaises(Exception):
+                policy.set_device("openrgb", "G513 RGB MECHANICAL GAMING KEYBOARD", direction="sideways")
             policy.set_strategy("least_blue")
             save(policy, path)
             self.assertEqual(load(path).strategy, "least_blue")
@@ -447,6 +455,7 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual(keyboard.entry.effect, "gradient")
         self.assertEqual(keyboard.openrgb_leds, ((2, 107),))
         self.assertEqual(keyboard.entry.bus, "openrgb")
+        self.assertFalse(keyboard.spatial)
         mouse = next(target for target in targets if target.entry.name == "Some Mouse")
         self.assertEqual(mouse.entry.effect, "gradient")
         board = next(target for target in targets if target.entry.name == "Board LED")
@@ -482,6 +491,12 @@ class CatalogTest(unittest.TestCase):
         targets = match(self.entries, hardware, [(4, "Corsair Commander Pro", 0, False, True)])
         self.assertEqual(len(targets), 1)
         self.assertEqual(targets[0].entry.name, "Corsair Commander PRO")
+
+    def test_a_key_matrix_marks_the_keyboard_spatial(self):
+        openrgb = [(2, "G513 RGB MECHANICAL GAMING KEYBOARD", 107, True, True, True)]
+        targets = match(self.entries, [], openrgb)
+        keyboard = next(target for target in targets if target.entry.name.startswith("G513"))
+        self.assertTrue(keyboard.spatial)
 
     def test_a_database_row_claims_a_keyboard_before_the_generic_match(self):
         entries = [Entry("usb", "1532:0099", "Mouse", "openrgb", "solid", "Basilisk", "")]
@@ -980,7 +995,7 @@ class OpenRgbTest(unittest.TestCase):
             return Link(_Buf(incoming))
 
         found = list_devices(opener)
-        self.assertEqual(found, [(5, "Razer Blackwidow V3", 132, True, True)])
+        self.assertEqual(found, [(5, "Razer Blackwidow V3", 132, True, True, True)])
         self.assertEqual(calls["n"], 2)
 
         def refuse():
@@ -1027,6 +1042,22 @@ class OpenRgbTest(unittest.TestCase):
             _colours(self._theme(), "gradient", controller),
             [(255, 0, 255), (255, 0, 0), (255, 0, 255), (255, 0, 0)],
         )
+        self.assertEqual(
+            _colours(self._theme(), "gradient", controller, "down"),
+            [(255, 0, 255), (255, 0, 255), (255, 0, 0), (255, 0, 0)],
+        )
+
+    def test_vanguard_down_runs_from_the_top_of_each_column(self):
+        stops = [(255, 0, 255), (255, 0, 0)]
+        across = dict(led_colours(stops, "across"))
+        down = dict(led_colours(stops, "down"))
+        ordered = [led for zone in ZONES for led in zone]
+        self.assertEqual(across[ordered[0]], (255, 0, 255))
+        self.assertEqual(across[ordered[-1]], (255, 0, 0))
+        self.assertEqual(down[ZONES[0][0]], (255, 0, 255))
+        self.assertEqual(down[ZONES[0][-1]], (255, 0, 0))
+        self.assertEqual(down[ZONES[1][0]], (255, 0, 255))
+        self.assertNotEqual(down[ZONES[0][len(ZONES[0]) // 2]], across[ZONES[0][len(ZONES[0]) // 2]])
 
     def test_a_mode_without_brightness_uses_custom_mode(self):
         mode = Mode(0, "Direct", 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ())

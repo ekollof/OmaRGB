@@ -26,7 +26,7 @@
     <p>Work starts as a GitHub issue, described in <a href="https://github.com/ekollof/OmaRGB/blob/master/CONTRIBUTE.md">CONTRIBUTE.md</a>. This page is the shape of the change itself. Setup for the engines that already ship is on <a href="engines.html">Engines</a>.</p>
 
     <h2>An OpenRGB device</h2>
-    <p>A controller the OpenRGB server reports, when it can take a colour, is painted with no row. More than one per-LED colour is a gradient. A keyboard matrix runs left to right, one colour per column, and a strip with no matrix follows the LED list. One LED, or a static mode, is one colour. Plug it in, leave the OpenRGB server running, and <code>omargb plan</code> should name it.</p>
+    <p>A controller the OpenRGB server reports, when it can take a colour, is painted with no row. More than one per-LED colour is a gradient. A keyboard matrix runs across the keys, or down them when the panel says so, and a strip with no matrix follows the LED list. One LED, or a static mode, is one colour. Plug it in, leave the OpenRGB server running, and <code>omargb plan</code> should name it.</p>
     <p>A USB id on OpenLinkHub's list is painted by that service, from <code>share/openlinkhub.toml</code>, unless the same controller can take a colour per LED. A database row still wins when a device should use another engine.</p>
 
     <h2>A database row</h2>

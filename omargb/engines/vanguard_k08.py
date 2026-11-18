@@ -39,6 +39,7 @@ class VanguardK08:
         if not targets:
             return None
         effect = targets[0].entry.effect
+        direction = targets[0].entry.direction
         stops = list(theme.stops if effect == "gradient" else (theme.solid, theme.solid))
         if dry_run:
             return "vanguard_k08 dry-run " + " ".join(_hex(colour) for colour in theme.stops)
@@ -50,13 +51,30 @@ class VanguardK08:
         fd = os.open(path, os.O_RDWR)
         try:
             block = read_map(fd, fcntl)
-            ordered = [led for zone in ZONES for led in zone]
-            for led, colour in zip(ordered, spread(stops, len(ordered))):
+            for led, colour in led_colours(stops, direction):
                 paint(block, led, colour)
             write_map(fd, fcntl, block)
         finally:
             os.close(fd)
         return "vanguard_k08 " + " ".join(_hex(colour) for colour in theme.stops)
+
+
+def led_colours(stops: list[tuple[int, int, int]], direction: str = "across"):
+    """Pair each LED with a colour.
+
+    Across walks the columns from left to right, which is how this keyboard
+    has always run. Down gives every column the same top-to-bottom spread.
+    """
+    if direction == "down":
+        height = max(len(zone) for zone in ZONES)
+        palette = spread(stops, height)
+        for zone in ZONES:
+            last = max(len(zone) - 1, 1)
+            for row, led in enumerate(zone):
+                yield led, palette[round(row * (height - 1) / last)]
+        return
+    ordered = [led for zone in ZONES for led in zone]
+    yield from zip(ordered, spread(stops, len(ordered)))
 
 
 def find_hidraw() -> str | None:

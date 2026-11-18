@@ -37,7 +37,7 @@
           <td>OpenRGB controllers</td>
           <td>The server reports a device that can take a colour, and no row claimed it</td>
           <td><code>openrgb</code></td>
-          <td>Gradient when it has more than one per-LED colour. A keyboard matrix is one colour per column, left to right. One LED, or a static mode, is one colour</td>
+          <td>Gradient when it has more than one per-LED colour. A keyboard matrix runs across the keys, or down them when the panel says so. One LED, or a static mode, is one colour</td>
         </tr>
         <tr>
           <td>OpenLinkHub USB devices</td>
@@ -49,7 +49,7 @@
           <td>Sound BlasterX Vanguard K08</td>
           <td>USB <code>041e:3126</code></td>
           <td><code>vanguard_k08</code></td>
-          <td>Gradient, side to side across the key columns</td>
+          <td>Gradient across the key columns, or down each column when the panel says so</td>
         </tr>
         <tr>
           <td>Razer Basilisk V3</td>
@@ -95,7 +95,7 @@
         </tr>
       </tbody>
     </table>
-    <p>The bar can turn any of these off, or pin a gradient device to one colour. That choice is <code>~/.config/omargb/behaviour.json</code>.</p>
+    <p>The bar can turn any of these off, or pin a gradient device to one colour. On the Vanguard and on a keyboard with a key matrix, the gradient can run across the keys or down them. That choice is <code>~/.config/omargb/behaviour.json</code>.</p>
 
     <h2>Tested</h2>
     <p>Supported is what the database will match. Tested is what has been painted on one machine. Framework and ASUS are supported by the same checks Omarchy uses, and have not been run here.</p>

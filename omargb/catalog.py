@@ -21,6 +21,7 @@ class Entry:
     effect: str
     openrgb: str
     fallback: str
+    direction: str = "across"
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,8 @@ class Target:
     openrgb_devices: tuple[tuple[int, str], ...] = ()
     # OpenRGB index and LED count for devices that can take one colour per LED.
     openrgb_leds: tuple[tuple[int, int], ...] = ()
+    # True when the device has a key matrix, so the gradient can run across or down.
+    spatial: bool = False
 
 
 def load_database(path: Path | None = None) -> list[Entry]:
@@ -76,7 +79,13 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
             if not hits:
                 continue
             claimed.update(index for index, _name, _leds in hits)
-            targets.append(Target(entry, Hardware("openrgb", entry.ident, entry.name), _names(hits), _leds(hits)))
+            targets.append(Target(
+                entry,
+                Hardware("openrgb", entry.ident, entry.name),
+                _names(hits),
+                _leds(hits),
+                _spatial(openrgb_devices, {index for index, _name, _leds in hits}),
+            ))
             continue
 
         if entry.bus == "hass":
@@ -100,7 +109,13 @@ def match(entries: list[Entry], hardware: list[Hardware], openrgb_devices: list[
             claimed.update(index for index, _name, _count in hits)
             indices = _names(hits)
             leds = _leds(hits)
-        targets.append(Target(entry, device, indices, leds))
+        targets.append(Target(
+            entry,
+            device,
+            indices,
+            leds,
+            _spatial(openrgb_devices, {index for index, _name in indices}),
+        ))
     targets.extend(_openlinkhub_usb(hardware, openrgb_devices, claimed, claimed_usb))
     targets.extend(_openrgb_rest(openrgb_devices, claimed))
     return targets
@@ -170,7 +185,13 @@ def _openrgb_rest(devices, claimed: set[int]) -> list[Target]:
         effect = "gradient" if leds > 1 else "solid"
         counted = ((index, leds),) if leds > 1 else ()
         entry = Entry("openrgb", name, name, "openrgb", effect, "", "")
-        found.append(Target(entry, Hardware("openrgb", name, name), ((index, name),), counted))
+        found.append(Target(
+            entry,
+            Hardware("openrgb", name, name),
+            ((index, name),),
+            counted,
+            _matrix(device),
+        ))
     return found
 
 
@@ -219,3 +240,12 @@ def _names(hits) -> tuple[tuple[int, str], ...]:
 
 def _leds(hits) -> tuple[tuple[int, int], ...]:
     return tuple((index, count) for index, _name, count in hits if count > 1)
+
+
+def _matrix(device) -> bool:
+    _index, _name, *rest = device
+    return bool(rest[3]) if len(rest) > 3 else False
+
+
+def _spatial(devices, indices: set[int]) -> bool:
+    return any(_matrix(device) for device in devices if device[0] in indices)

@@ -41,6 +41,7 @@ def fingerprint(theme: Theme, targets: list[Target], strategy: str = "warmest") 
         rows.append("|".join((
             entry.engine,
             entry.effect,
+            entry.direction,
             entry.bus,
             entry.ident,
             target.hardware.ident,

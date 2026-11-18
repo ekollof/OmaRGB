@@ -4,9 +4,10 @@ Protocol 4 on 127.0.0.1:6742. The 1.1 server still answers that description
 layout. A later protocol pushes its own name and waits for acknowledgements,
 which this client does not need. A device with a per-LED mode and more than
 one LED gets the theme stops. A keyboard matrix is painted left to right, one
-colour per column, the way the Vanguard runs side to side. A strip with no
-matrix follows the LED list. A device with no LED list gets one colour in
-its Static mode.
+colour per column, the way the Vanguard runs side to side. A direction of
+down uses one colour per row instead, from the top of the board. A strip
+with no matrix follows the LED list. A device with no LED list gets one
+colour in its Static mode.
 """
 
 import socket
@@ -83,7 +84,7 @@ class OpenRgb:
 
     def apply(self, theme: Theme, targets: list[Target], dry_run: bool) -> str:
         jobs = [
-            (index, name, counts.get(index, 0), target.entry.effect)
+            (index, name, counts.get(index, 0), target.entry.effect, target.entry.direction)
             for target in targets
             for counts in (dict(target.openrgb_leds),)
             for index, name in target.openrgb_devices
@@ -92,7 +93,7 @@ class OpenRgb:
             return "openrgb: nothing addressed"
         if dry_run:
             return "openrgb dry-run " + ", ".join(
-                _note(index, name, effect, leds, theme) for index, name, leds, effect in jobs
+                _note(index, name, effect, leds, theme) for index, name, leds, effect, _direction in jobs
             )
         opened = session()
         if opened is None:
@@ -102,12 +103,12 @@ class OpenRgb:
             live = {controller.index: controller for controller in found}
             notes: list[str] = []
             used: set[int] = set()
-            for index, name, _leds, effect in jobs:
+            for index, name, _leds, effect, direction in jobs:
                 controller = _pick(live, used, index, name)
                 if controller is None:
                     continue
                 if controller.leds >= 1 and controller.per_led_mode is not None:
-                    link.paint(controller, _colours(theme, effect, controller))
+                    link.paint(controller, _colours(theme, effect, controller, direction))
                     notes.append(_note(controller.index, controller.name, effect, controller.leds, theme))
                 elif link.paint_static(controller, theme.solid):
                     notes.append(_note(controller.index, controller.name, "solid", 0, theme))
@@ -120,14 +121,15 @@ class OpenRgb:
             link.close()
 
 
-def list_devices(opener=None) -> list[tuple[int, str, int, bool, bool]]:
+def list_devices(opener=None) -> list[tuple[int, str, int, bool, bool, bool]]:
     """Indexed devices from the OpenRGB server.
 
     The third field is the LED count when the device has a per-LED mode and
     more than one LED, otherwise 0. The fourth field is true for a keyboard.
     The fifth is true when the device can take a colour, including one LED
-    and a static mode with no LED list. A server that is not answering yields
-    an empty list, so the other engines still run.
+    and a static mode with no LED list. The sixth is true when a key matrix
+    gives the gradient an across axis and a down axis. A server that is not
+    answering yields an empty list, so the other engines still run.
     """
     opened = session(opener or connect)
     if not isinstance(opened, tuple):
@@ -141,6 +143,7 @@ def list_devices(opener=None) -> list[tuple[int, str, int, bool, bool]]:
                 controller.gradient_count,
                 controller.keyboard,
                 controller.per_led_mode is not None or static_mode(controller) is not None,
+                bool(controller.places),
             )
             for controller in found
         ]
@@ -411,33 +414,44 @@ def _note(index: int, name: str, effect: str, leds: int, theme: Theme) -> str:
     return f"{index}:{name} {theme.solid_hex()}"
 
 
-def _colours(theme: Theme, effect: str, controller: Controller) -> list[tuple[int, int, int]]:
+def _colours(
+    theme: Theme,
+    effect: str,
+    controller: Controller,
+    direction: str = "across",
+) -> list[tuple[int, int, int]]:
     if effect == "gradient" and controller.leds > 1 and theme.stops:
         if controller.places:
-            across = _across(list(theme.stops), controller.places, controller.leds)
-            if across is not None:
-                return across
+            axis = 1 if direction == "down" else 0
+            painted = _axis(list(theme.stops), controller.places, controller.leds, axis)
+            if painted is not None:
+                return painted
         return spread(list(theme.stops), controller.leds)
     return [theme.solid] * controller.leds
 
 
-def _across(
+def _axis(
     stops: list[tuple[int, int, int]],
     places: tuple[tuple[int, int] | None, ...],
     led_count: int,
+    axis: int,
 ) -> list[tuple[int, int, int]] | None:
-    """One colour per keyboard column, from the left of the board to the right."""
-    columns = [place[0] for place in places if place is not None]
-    if len(columns) < 2:
+    """One colour per column (axis 0) or per row (axis 1).
+
+    Column 0 is the left of the board and row 0 is the top. Unmapped LEDs
+    keep the first stop.
+    """
+    used = [place[axis] for place in places if place is not None]
+    if len(used) < 2:
         return None
-    left, right = min(columns), max(columns)
-    if left == right:
+    start, end = min(used), max(used)
+    if start == end:
         return None
-    palette = spread(stops, right - left + 1)
+    palette = spread(stops, end - start + 1)
     colours = [palette[0]] * led_count
     for index, place in enumerate(places):
         if place is not None:
-            colours[index] = palette[place[0] - left]
+            colours[index] = palette[place[axis] - start]
     return colours
 
 
